@@ -58,8 +58,12 @@ const formatTime = (value: number) => {
   return `${minutes}:${seconds}`;
 };
 
-function Meter({ active, accent = "cyan" }: { active: boolean; accent?: string }) {
-  return <div className={`meter meter-${accent}`}>{Array.from({ length: 18 }).map((_, index) => <span key={index} className={active ? "meter-pulse" : ""} style={{ height: `${24 + ((index * 19) % 68)}%` }} />)}</div>;
+function Meter({ active, accent = "cyan", level = 0 }: { active: boolean; accent?: string; level?: number }) {
+  return <div className={`meter meter-${accent} ${active ? "meter-live" : ""}`}>{Array.from({ length: 18 }).map((_, index) => { const threshold = (index + 1) / 18; const lit = active && level >= threshold * 0.86; return <span key={index} className={lit ? "meter-pulse" : ""} style={{ height: `${24 + ((index * 19) % 68)}%`, opacity: lit ? 0.98 : 0.16 }} />; })}</div>;
+}
+
+function EqDisplay({ bands, accent = "cyan" }: { bands: number[]; accent?: string }) {
+  return <div className={`eq-display eq-${accent}`} aria-label="Live equalizer display">{bands.map((band, index) => <span key={index} style={{ height: `${Math.max(8, Math.min(100, band * 100))}%` }} />)}</div>;
 }
 
 function Waveform({ color = "cyan", seed = 1, active = false }: { color?: string; seed?: number; active?: boolean }) {
@@ -72,6 +76,10 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
+  const previewGainRef = useRef<GainNode | null>(null);
+  const previewPanRef = useRef<StereoPannerNode | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const analysisFrameRef = useRef<number | null>(null);
   const trackNodesRef = useRef<Record<string, { gain: GainNode; pan: StereoPannerNode }>>({});
   const [currentTrackId, setCurrentTrackId] = useState<(typeof AUDIO_TRACKS)[number]["id"]>("geo-render");
   const [isPlaying, setIsPlaying] = useState(false);
@@ -92,6 +100,8 @@ export default function Home() {
   const [midiStatus, setMidiStatus] = useState("MIDI unavailable");
   const [midiInputs, setMidiInputs] = useState<string[]>([]);
   const [midiMap, setMidiMap] = useState<Record<number, number>>({});
+  const [meterLevels, setMeterLevels] = useState<Record<string, number>>(() => Object.fromEntries(tracks.map((track) => [track.id, 0])));
+  const [eqBands, setEqBands] = useState<number[]>([0.06, 0.08, 0.1, 0.08, 0.06, 0.05, 0.04, 0.03]);
   const [trackedVisits, setTrackedVisits] = useState(0);
   const [generateOnTrackedVisit, setGenerateOnTrackedVisit] = useState(() => window.localStorage.getItem("parkway-generate-on-tracked-visit") === "true");
   const activeTrack = AUDIO_TRACKS.find((track) => track.id === currentTrackId) ?? AUDIO_TRACKS[0];
@@ -135,22 +145,97 @@ export default function Home() {
     if (!audioContextRef.current) {
       const context = new AudioContextCtor();
       const source = context.createMediaElementSource(audioRef.current);
+      const analyser = context.createAnalyser();
       const masterGain = context.createGain();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.78;
       masterGain.gain.value = master / 100;
-      sourceNodeRef.current = source; masterGainRef.current = masterGain; audioContextRef.current = context;
-      tracksState.forEach((track) => { const gain = context.createGain(); const pan = context.createStereoPanner(); gain.gain.value = track.level / 100; pan.pan.value = track.pan / 50; gain.connect(pan); pan.connect(masterGain); trackNodesRef.current[track.id] = { gain, pan }; });
-      masterGain.connect(context.destination);
+      analyser.connect(masterGain).connect(context.destination);
+      sourceNodeRef.current = source;
+      analyserRef.current = analyser;
+      masterGainRef.current = masterGain;
+      audioContextRef.current = context;
+      tracksState.forEach((track) => {
+        const gain = context.createGain();
+        const pan = context.createStereoPanner();
+        gain.gain.value = track.level / 100;
+        pan.pan.value = track.pan / 50;
+        gain.connect(pan);
+        pan.connect(analyser);
+        trackNodesRef.current[track.id] = { gain, pan };
+      });
+      const activeNode = trackNodesRef.current[selectedTrack];
+      if (activeNode) source.connect(activeNode.gain);
     }
-    const activeNode = trackNodesRef.current[selectedTrack];
-    if (sourceNodeRef.current && activeNode) { try { sourceNodeRef.current.disconnect(); } catch {} sourceNodeRef.current.connect(activeNode.gain); }
-    audioContextRef.current.resume();
+    if (audioContextRef.current.state === "suspended") void audioContextRef.current.resume();
     return audioContextRef.current;
   };
+
+  useEffect(() => {
+    const node = trackNodesRef.current[selectedTrack];
+    const source = sourceNodeRef.current;
+    if (!node || !source) return;
+    try { source.disconnect(); } catch {}
+    source.connect(node.gain);
+  }, [selectedTrack]);
+
+  useEffect(() => {
+    const node = trackNodesRef.current[selectedTrack];
+    const source = sourceNodeRef.current;
+    if (!node || !source) return;
+    try { source.disconnect(); } catch {}
+    source.connect(node.gain);
+  }, [currentTrackId]);
+
+  useEffect(() => {
+    const masterGain = masterGainRef.current;
+    if (masterGain) masterGain.gain.value = master / 100;
+  }, [master]);
+
+  useEffect(() => {
+    if (!isPlaying || !analyserRef.current) return;
+    const analyser = analyserRef.current;
+    const frequencyData = new Uint8Array(analyser.frequencyBinCount);
+    const bands = 8;
+    const draw = () => {
+      analyser.getByteFrequencyData(frequencyData);
+      const nextBands = Array.from({ length: bands }, (_, index) => {
+        const start = Math.floor((index / bands) * frequencyData.length);
+        const end = Math.max(start + 1, Math.floor(((index + 1) / bands) * frequencyData.length));
+        const slice = frequencyData.slice(start, end);
+        return slice.reduce((sum, value) => sum + value, 0) / (slice.length * 255);
+      });
+      const energy = nextBands.reduce((sum, value) => sum + value, 0) / bands;
+      setEqBands(nextBands);
+      setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, track.id === selectedTrack ? energy : 0])));
+      analysisFrameRef.current = window.requestAnimationFrame(draw);
+    };
+    draw();
+    return () => { if (analysisFrameRef.current !== null) window.cancelAnimationFrame(analysisFrameRef.current); analysisFrameRef.current = null; };
+  }, [isPlaying, selectedTrack]);
+
+  useEffect(() => {
+    if (!audioRef.current) return;
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    audioRef.current.load();
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+  }, [currentTrackId]);
 
   const togglePlay = async () => {
     if (!audioRef.current) return;
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); return; }
-    try { ensureAudioGraph(); await audioRef.current.play(); setIsPlaying(true); } catch { toast.error("Audio preview is unavailable in this browser session."); }
+    try {
+      const context = ensureAudioGraph();
+      if (context?.state === "suspended") await context.resume();
+      await audioRef.current.play();
+      setIsPlaying(true);
+    } catch (error) {
+      console.error(error);
+      toast.error("Audio preview could not start. Check the selected source and browser output.");
+    }
   };
 
   const stop = () => {
@@ -182,7 +267,7 @@ export default function Home() {
 
   return (
     <main className="parkway-app">
-      <audio ref={audioRef} src={activeTrack.src} preload="metadata" loop={isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => setIsPlaying(false)} />
+      <audio ref={audioRef} src={activeTrack.src} preload="metadata" loop={isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); }} onError={() => toast.error(`Audio source failed to load: ${activeTrack.label}`)} />
       <div className="parkway-grid" />
       <aside className={`sidebar ${showBrowser ? "sidebar-open" : "sidebar-collapsed"}`}>
         <div className="brand-lockup"><div className="brand-mark"><AudioWaveform size={19} /></div>{showBrowser && <div><div className="brand-name">PARKWAY</div><div className="brand-sub">JIG CODE / DAW</div></div>}</div>
@@ -211,7 +296,7 @@ export default function Home() {
 
           <section className="arrangement-panel panel"><div className="panel-header"><div><div className="section-kicker"><AudioWaveform size={13} /> Arrangement / 16 bars</div><h2>Night Drive <span className="muted-slash">/</span> <span>Master comp</span></h2></div><div className="panel-header-actions"><span className="small-pill"><span className="status-light" /> {activeCount} active</span><button className="icon-button"><MoreIcon /></button></div></div><div className="timeline-ruler"><span />{Array.from({ length: 16 }).map((_, i) => <div key={i} className={i + 1 === activeBar ? "ruler-active" : ""}>{String(i + 1).padStart(2, "0")}</div>)}</div><div className="loop-editor"><span>LOOP</span><div className="loop-track"><div className="loop-fill" style={{ left: `${(loopRegion.start / GRID_BEATS) * 100}%`, width: `${((loopRegion.end - loopRegion.start) / GRID_BEATS) * 100}%` }} /><button className="loop-handle loop-handle-start" style={{ left: `${(loopRegion.start / GRID_BEATS) * 100}%` }} aria-label="Move loop start" onPointerDown={(event) => { event.stopPropagation(); setDraggingHandle("start"); }} /><button className="loop-handle loop-handle-end" style={{ left: `${(loopRegion.end / GRID_BEATS) * 100}%` }} aria-label="Move loop end" onPointerDown={(event) => { event.stopPropagation(); setDraggingHandle("end"); }} /></div><strong>{String(loopRegion.start).padStart(2, "0")} — {String(loopRegion.end).padStart(2, "0")} bars</strong></div><div ref={timelineRef} className="timeline-grid" onPointerMove={handleTimelinePointerMove} onPointerUp={() => { setDraggingHandle(null); setDraggingClip(null); }} onPointerLeave={() => { setDraggingHandle(null); setDraggingClip(null); }}>{tracksState.map((track, index) => <div key={track.id} className={`timeline-row ${selectedTrack === track.id ? "row-selected" : ""}`} onClick={() => setSelectedTrack(track.id)}><div className={`track-label label-${track.color}`}><div className="track-icon">{track.type === "midi" ? <Grid3X3 size={13} /> : <AudioWaveform size={13} />}</div><div className="track-copy"><strong>{track.name}</strong><span>{track.type.toUpperCase()} · {track.preset}</span></div></div><div className="clip-lane"><div className={`clip clip-${track.color}`} style={{ left: `${track.clipStart}%`, width: `${track.clipLength}%` }} onPointerDown={(event) => { event.stopPropagation(); setSelectedTrack(track.id); setDraggingClip(track.id); }}><span>{index === 0 ? "INTRO / TAKE 03" : index === 1 ? "SUB PULSE" : index === 2 ? "HOOK A" : index === 3 ? "HARMONY" : index === 4 ? "AIR BED" : "TEXTURE"}</span><Waveform color={track.color} seed={index + 2} active={isPlaying && selectedTrack === track.id} /></div>{index < 4 && <div className={`clip clip-${track.color} clip-secondary`} style={{ left: `${62 + index * 2}%`, width: `${20 + (index % 3) * 5}%` }} onPointerDown={(event) => { event.stopPropagation(); setSelectedTrack(track.id); setDraggingClip(track.id); }}><Waveform color={track.color} seed={index + 7} /></div>}</div></div>)}<div className="playhead" style={{ left: `${4 + (activeBar - 1) * 6.12}%` }}><span /></div></div><div className="timeline-footer"><span>01:00</span><span>02:00</span><span>03:00</span><span>04:00</span><span className="footer-hint">Drag clips to arrange · click a lane to inspect</span></div></section>
 
-          <div className="lower-grid"><section className="mixer-panel panel"><div className="panel-header"><div><div className="section-kicker"><SlidersHorizontal size={13} /> Channel rack</div><h2>Mix bus <span className="muted-slash">/</span> <span>{soloActive ? `${soloedIds.length} soloed` : "Stereo out"}</span></h2></div><button className="outline-button outline-small" onClick={() => setTracksState(tracks.map((track) => ({ ...track, muted: false, solo: false, armed: false })))}><Power size={13} /> Reset</button></div><div className="mixer-list">{tracksState.map((track) => <div key={track.id} className={`mixer-row ${track.muted ? "is-muted" : ""} ${selectedTrack === track.id ? "mixer-selected" : ""}`} onClick={() => setSelectedTrack(track.id)}><div className={`mixer-name name-${track.color}`}><span className="channel-number">{String(tracksState.indexOf(track) + 1).padStart(2, "0")}</span><div><strong>{track.name}</strong><span>{track.type.toUpperCase()}</span></div></div><div className="mini-meter"><Meter active={isPlaying && !track.muted} accent={track.color} /></div><div className="mixer-level"><input aria-label={`${track.name} level`} type="range" min="0" max="100" value={track.level} onChange={(event) => updateTrack(track.id, { level: Number(event.target.value) })} className={`range-${track.color}`} /><span>{track.level}</span></div><div className="mixer-actions"><button className={`mix-button ${track.muted ? "is-on" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { muted: !track.muted }); }}>M</button><button className={`mix-button ${track.solo ? "is-solo" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { solo: !track.solo }); }}>S</button><button className={`mix-button ${track.armed ? "is-armed" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { armed: !track.armed }); }}><Mic2 size={12} /></button></div></div>)}</div></section>
+          <div className="lower-grid"><section className="mixer-panel panel"><div className="panel-header"><div><div className="section-kicker"><SlidersHorizontal size={13} /> Channel rack</div><h2>Mix bus <span className="muted-slash">/</span> <span>{soloActive ? `${soloedIds.length} soloed` : "Stereo out"}</span></h2></div><button className="outline-button outline-small" onClick={() => setTracksState(tracks.map((track) => ({ ...track, muted: false, solo: false, armed: false })))}><Power size={13} /> Reset</button></div><div className="mixer-list">{tracksState.map((track) => <div key={track.id} className={`mixer-row ${track.muted ? "is-muted" : ""} ${selectedTrack === track.id ? "mixer-selected" : ""}`} onClick={() => setSelectedTrack(track.id)}><div className={`mixer-name name-${track.color}`}><span className="channel-number">{String(tracksState.indexOf(track) + 1).padStart(2, "0")}</span><div><strong>{track.name}</strong><span>{track.type.toUpperCase()}</span></div></div><div className="mini-meter"><Meter active={isPlaying && !track.muted} accent={track.color} level={meterLevels[track.id] ?? 0} /><EqDisplay bands={selectedTrack === track.id ? eqBands : eqBands.map((band) => band * 0.35)} accent={track.color} /></div><div className="mixer-level"><input aria-label={`${track.name} level`} type="range" min="0" max="100" value={track.level} onChange={(event) => updateTrack(track.id, { level: Number(event.target.value) })} className={`range-${track.color}`} /><span>{track.level}</span></div><div className="mixer-actions"><button className={`mix-button ${track.muted ? "is-on" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { muted: !track.muted }); }}>M</button><button className={`mix-button ${track.solo ? "is-solo" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { solo: !track.solo }); }}>S</button><button className={`mix-button ${track.armed ? "is-armed" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { armed: !track.armed }); }}><Mic2 size={12} /></button></div></div>)}</div></section>
 
             <aside className="inspector panel"><div className="panel-header"><div><div className="section-kicker"><Gauge size={13} /> Inspector / selected track</div><h2>{selected.name}</h2></div><button className="icon-button"><ChevronDown size={14} /></button></div><div className="inspector-hero"><div className={`inspector-badge badge-${selected.color}`}><AudioWaveform size={22} /></div><div><div className="inspector-type">{selected.type.toUpperCase()} CHANNEL</div><div className="inspector-preset">{selected.preset}</div></div></div><div className="parameter"><div><span>Volume</span><strong>{selected.level}%</strong></div><input aria-label="Selected track volume" type="range" min="0" max="100" value={selected.level} onChange={(event) => updateTrack(selected.id, { level: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="parameter"><div><span>Pan</span><strong>{selected.pan > 0 ? `R ${selected.pan}` : selected.pan < 0 ? `L ${Math.abs(selected.pan)}` : "CENTER"}</strong></div><input aria-label="Selected track pan" type="range" min="-50" max="50" value={selected.pan} onChange={(event) => updateTrack(selected.id, { pan: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="plugin-stack"><div className="plugin-slot"><span>01</span><div><strong>JIG / TRANSIENT</strong><small>Active · 4.2 ms</small></div><ChevronDown size={13} /></div><div className="plugin-slot"><span>02</span><div><strong>PARKWAY SATURATOR</strong><small>Drive 18% · Air +3 dB</small></div><ChevronDown size={13} /></div><button className="add-plugin" onClick={() => toast("Plugin browser opened")}><Plus size={13} /> Add insert</button></div><div className="inspector-footer"><div><span>Peak</span><strong>-3.2 dB</strong></div><div><span>Headroom</span><strong>6.8 dB</strong></div></div></aside></div>
         </div></section>

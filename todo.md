@@ -1,8 +1,8 @@
-# GEO MIDI Controller Deck — Work Items
+# PARKWAY DAW — Audio Feedback Work Items
 
-- [x] Add a mixer preset model with channel level, pan, send, mute, solo, and master settings.
-- [x] Add preset save, load, delete, and reset controls using browser-local persistence.
-- [x] Generate the Muchie Pop Casket underground hip-gothic instrumental.
-- [x] Integrate the generated audio as a selectable deck source without removing the existing render.
-- [x] Validate TypeScript, production build, playback, and preset interactions.
-- [x] Save a new delivery checkpoint.
+- [x] Inspect the synced audio element, source selection, and Web Audio routing.
+- [x] Fix the silent playback path and confirm a loaded source reaches the destination.
+- [x] Add real-time analyser data for master and mixer channels.
+- [x] Render live volume meters and dynamic EQ displays from analyser data.
+- [x] Validate playback, visual response, and responsive mixer behavior.
+- [x] Save a delivery checkpoint.
