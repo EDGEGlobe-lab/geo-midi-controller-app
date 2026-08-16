@@ -19,13 +19,18 @@ import {
   RotateCcw,
   Settings2,
   SlidersHorizontal,
+  Save,
+  Trash2,
   Volume2,
   VolumeX,
   Waves,
   Zap,
 } from "lucide-react";
 
-const AUDIO_SRC = "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav";
+const AUDIO_TRACKS = [
+  { id: "geo-render", label: "GEO Controller Render", src: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav", tag: "D MAJOR / 156 BPM" },
+  { id: "muchie-casket", label: "Muchie Pop Casket", src: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", tag: "F MINOR / 128 BPM" },
+] as const;
 const SIGNAL_FIELD = "/manus-storage/geo-signal-field_d3744adf.jpg";
 const STUDIO_RACK = "/manus-storage/geo-studio-rack_582309a0.jpg";
 const SIGNAL_MARK = "/manus-storage/geo-signal-mark_cc27ee50.png";
@@ -41,6 +46,7 @@ const channelBlueprint = [
 ];
 
 type Channel = (typeof channelBlueprint)[number] & { muted: boolean; solo: boolean };
+type MixerPreset = { id: string; name: string; createdAt: string; master: number; tempo: number; channels: Channel[] };
 
 const formatTime = (value: number) => {
   if (!Number.isFinite(value)) return "00:00";
@@ -78,6 +84,17 @@ export default function Home() {
   const [tempo, setTempo] = useState(156);
   const [activeBar, setActiveBar] = useState(1);
   const [showSettings, setShowSettings] = useState(false);
+  const [currentTrackId, setCurrentTrackId] = useState<(typeof AUDIO_TRACKS)[number]["id"]>("geo-render");
+  const [presetName, setPresetName] = useState("Night Drive");
+  const [presets, setPresets] = useState<MixerPreset[]>(() => {
+    try {
+      const saved = window.localStorage.getItem("geo-signal-mixer-presets");
+      return saved ? (JSON.parse(saved) as MixerPreset[]) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [activePresetId, setActivePresetId] = useState<string | null>(null);
 
   const soloActive = channels.some((channel) => channel.solo);
   const activeChannels = useMemo(
@@ -120,12 +137,59 @@ export default function Home() {
   };
 
   const masterAccent = isPlaying ? "LIVE" : "READY";
+  const activeTrack = AUDIO_TRACKS.find((track) => track.id === currentTrackId) ?? AUDIO_TRACKS[0];
+
+  const selectTrack = (trackId: (typeof AUDIO_TRACKS)[number]["id"]) => {
+    const track = AUDIO_TRACKS.find((item) => item.id === trackId);
+    if (!track || !audioRef.current) return;
+    audioRef.current.pause();
+    audioRef.current.currentTime = 0;
+    setCurrentTime(0);
+    setIsPlaying(false);
+    setCurrentTrackId(track.id);
+  };
+
+  const persistPresets = (next: MixerPreset[]) => {
+    setPresets(next);
+    window.localStorage.setItem("geo-signal-mixer-presets", JSON.stringify(next));
+  };
+
+  const savePreset = () => {
+    const cleanName = presetName.trim() || `Snapshot ${presets.length + 1}`;
+    const id = activePresetId ?? `${Date.now()}`;
+    const nextPreset: MixerPreset = { id, name: cleanName, createdAt: new Date().toISOString(), master, tempo, channels };
+    const next = activePresetId ? presets.map((preset) => (preset.id === id ? nextPreset : preset)) : [...presets, nextPreset];
+    persistPresets(next);
+    setActivePresetId(id);
+    setPresetName(cleanName);
+  };
+
+  const loadPreset = (preset: MixerPreset) => {
+    setChannels(preset.channels.map((channel) => ({ ...channel })));
+    setMaster(preset.master);
+    setTempo(preset.tempo);
+    setActivePresetId(preset.id);
+    setPresetName(preset.name);
+  };
+
+  const deletePreset = (id: string) => {
+    persistPresets(presets.filter((preset) => preset.id !== id));
+    if (activePresetId === id) setActivePresetId(null);
+  };
+
+  const resetMixer = () => {
+    setChannels(channelBlueprint.map((channel) => ({ ...channel, muted: false, solo: false })));
+    setMaster(82);
+    setTempo(156);
+    setActivePresetId(null);
+    setPresetName("Night Drive");
+  };
 
   return (
     <main className="min-h-screen overflow-x-hidden bg-[#090d12] text-[#edf7ff]">
       <audio
         ref={audioRef}
-        src={AUDIO_SRC}
+        src={activeTrack.src}
         preload="metadata"
         loop={isLooping}
         onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)}
@@ -166,9 +230,9 @@ export default function Home() {
           <div className="glass-panel relative overflow-hidden rounded-[26px] p-5 sm:p-7">
             <div className="absolute right-0 top-0 h-full w-1/2 opacity-40" style={{ backgroundImage: `url(${STUDIO_RACK})`, backgroundSize: "cover", backgroundPosition: "center" }} />
             <div className="relative z-10 min-w-0 max-w-2xl">
-              <div className="mb-5 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[0.22em] text-slate-400"><Radio className="size-3.5 text-[#55e6ff]" /> Master bus / controller playback</div>
+              <div className="mb-5 flex flex-wrap items-center justify-between gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-slate-400"><span className="flex items-center gap-2"><Radio className="size-3.5 text-[#55e6ff]" /> Master bus / controller playback</span><label className="flex items-center gap-2 rounded-lg border border-white/10 bg-black/20 px-2 py-1.5 text-[9px] tracking-[0.12em] text-slate-500"><AudioLines className="size-3.5 text-[#55e6ff]" /><select aria-label="Audio source" value={currentTrackId} onChange={(event) => selectTrack(event.target.value as (typeof AUDIO_TRACKS)[number]["id"])} className="max-w-44 bg-transparent text-[9px] uppercase tracking-[0.1em] text-slate-300 outline-none"><option value="geo-render" className="bg-[#0e141c]">GEO Controller Render</option><option value="muchie-casket" className="bg-[#0e141c]">Muchie Pop Casket</option></select></label></div>
               <div className="flex flex-wrap items-end gap-x-4 gap-y-2"><span className="font-display text-6xl font-semibold tracking-[-0.07em] text-white sm:text-8xl">{tempo}</span><span className="pb-2 font-mono text-xs uppercase tracking-[0.18em] text-[#ffc861]">BPM<br /><span className="text-slate-500">D major</span></span></div>
-              <div className="mt-6 flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.13em] text-slate-400"><span className="rounded-full bg-white/[0.07] px-3 py-1.5 text-[#a7f36b]">{masterAccent}</span><span>Bar {String(activeBar).padStart(2, "0")} / 16</span><span className="max-w-full truncate">Pattern {activeBar % 4 === 1 ? "GRATE PLUCK" : activeBar % 4 === 2 ? "CHORD STABS" : activeBar % 4 === 3 ? "ROOT BASS" : "ORBITAL PAD"}</span></div>
+              <div className="mt-6 flex flex-wrap items-center gap-2 font-mono text-[11px] uppercase tracking-[0.13em] text-slate-400"><span className="rounded-full bg-white/[0.07] px-3 py-1.5 text-[#a7f36b]">{masterAccent}</span><span>Bar {String(activeBar).padStart(2, "0")} / 16</span><span className="max-w-full truncate">{activeTrack.label} · {activeTrack.tag}</span></div>
               <div className="mt-7 flex flex-wrap items-center gap-2">
                 <button onClick={togglePlay} className="control-button-primary"><span className="grid size-7 place-items-center rounded-full bg-black/25">{isPlaying ? <Pause className="size-4" /> : <Play className="size-4 fill-current" />}</span>{isPlaying ? "Pause audio" : "Play audio"}</button>
                 <button onClick={stop} className="control-button"><CircleStop className="size-4" /> Stop</button>
@@ -188,6 +252,14 @@ export default function Home() {
         <section className="mb-4 flex flex-col gap-4 rounded-2xl border border-white/8 bg-white/[0.025] p-4 sm:flex-row sm:items-center sm:justify-between sm:p-5">
           <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-[#ffc861]/10 text-[#ffc861]"><Gauge className="size-5" /></div><div><div className="eyebrow">Master control</div><div className="mt-1 font-display text-base">Output level / tempo authority</div></div></div>
           <div className="flex flex-1 flex-wrap items-center gap-5 sm:justify-end"><label className="flex min-w-[180px] items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">Master <input aria-label="Master level" type="range" min="0" max="100" value={master} onChange={(event) => setMaster(Number(event.target.value))} className="range-amber flex-1" /><span className="w-8 text-right text-[#ffc861]">{master}</span></label><label className="flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.14em] text-slate-500">Tempo <input aria-label="Tempo" type="number" min="60" max="220" value={tempo} onChange={(event) => setTempo(Math.max(60, Math.min(220, Number(event.target.value) || 156)))} className="w-16 rounded-md border border-white/10 bg-black/20 px-2 py-1.5 text-center text-[#ffc861] outline-none" /></label></div>
+        </section>
+
+        <section className="mb-4 rounded-2xl border border-cyan-300/15 bg-cyan-300/[0.035] p-4 sm:p-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div className="flex items-center gap-3"><div className="grid size-10 place-items-center rounded-xl bg-[#55e6ff]/10 text-[#55e6ff]"><Save className="size-5" /></div><div><div className="eyebrow">Mixer snapshots</div><div className="mt-1 font-display text-base">Save the room. Recall the mood.</div></div></div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center"><input aria-label="Preset name" value={presetName} onChange={(event) => setPresetName(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") savePreset(); }} placeholder="Preset name" className="w-full rounded-lg border border-white/10 bg-black/20 px-3 py-2 font-mono text-[11px] uppercase tracking-[0.1em] text-white outline-none placeholder:text-slate-600 focus:border-cyan-300/50 sm:w-44" /><button onClick={savePreset} className="control-button-primary"><Save className="size-3.5" /> {activePresetId ? "Update preset" : "Save preset"}</button><button onClick={resetMixer} className="control-button"><RotateCcw className="size-3.5" /> Reset mix</button></div>
+          </div>
+          <div className="mt-4 flex gap-2 overflow-x-auto pb-1">{presets.length === 0 ? <span className="font-mono text-[10px] uppercase tracking-[0.15em] text-slate-600">No snapshots yet · save your current mix</span> : presets.map((preset) => <div key={preset.id} className={`flex shrink-0 items-center gap-1 rounded-lg border px-2 py-1.5 ${activePresetId === preset.id ? "border-[#a7f36b]/55 bg-[#a7f36b]/[0.08]" : "border-white/10 bg-black/15"}`}><button onClick={() => loadPreset(preset)} className="max-w-36 truncate px-1 font-mono text-[10px] uppercase tracking-[0.1em] text-slate-300 hover:text-white">{preset.name}</button><button aria-label={`Delete ${preset.name}`} onClick={() => deletePreset(preset.id)} className="rounded p-1 text-slate-600 transition hover:bg-[#ff5ca8]/10 hover:text-[#ff5ca8]"><Trash2 className="size-3" /></button></div>)}</div>
         </section>
 
         <section className="rounded-[26px] border border-white/8 bg-[#0e141c]/90 p-4 shadow-[0_26px_90px_rgba(0,0,0,0.28)] sm:p-5">
