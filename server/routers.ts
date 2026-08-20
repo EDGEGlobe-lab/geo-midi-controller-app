@@ -4,9 +4,10 @@ import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createContactEnquiry, createGenerationJob, createSamplerOutput, createStudioAsset, getUserByOpenId, listContactEnquiries, listGenerationJobs, listSamplerOutputs, listStudioAssets, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
+import { activateHardwareRegistration, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, getHardwareRegistration, getUserByOpenId, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listStudioAssets, revokeHardwareRegistration, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
 import { ENV } from "./_core/env";
+import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
@@ -19,6 +20,13 @@ const contactEnquirySchema = z.object({
   paymentDetailsRequested: z.boolean().default(false),
   website: z.string().max(0).optional().default(""),
 }).strict();
+const hardwareCategorySchema = z.enum(["computer", "standalone", "audio-interface", "midi-controller", "other"]);
+const hardwareRegistrationSchema = z.object({
+  label: z.string().trim().min(2).max(120),
+  category: hardwareCategorySchema,
+  productReference: z.string().trim().min(2).max(160).optional(),
+}).strict();
+const hardwarePurpose = "Store this owner-selected device label and enable PARKWAY browser sound and MIDI controls; no serials, telemetry, third-party licence, or device control.";
 
 export const appRouter = router({
   system: systemRouter,
@@ -47,6 +55,31 @@ export const appRouter = router({
       const owner = await getUserByOpenId(ENV.ownerOpenId);
       if (!owner || ctx.user.role !== "admin" || ctx.user.id !== owner.id) throw new TRPCError({ code: "FORBIDDEN", message: "Contact enquiries are limited to the project owner" });
       return listContactEnquiries(owner.id);
+    }),
+  }),
+  hardware: router({
+    list: protectedProcedure.query(({ ctx }) => listHardwareRegistrations(ctx.user.id)),
+    register: protectedProcedure.input(hardwareRegistrationSchema).mutation(({ ctx, input }) => createHardwareRegistration({
+      ownerUserId: ctx.user.id,
+      label: input.label,
+      category: input.category,
+      productReference: input.productReference || null,
+      activationState: "disabled",
+      consentNoticeVersion: null,
+      consentedAt: null,
+      revokedAt: null,
+    })),
+    activate: protectedProcedure.input(z.object({ registrationId: z.number().int().positive(), consentGranted: z.literal(true), noticeVersion: z.literal(SOUND_ACCESS_NOTICE_VERSION) }).strict()).mutation(async ({ ctx, input }) => {
+      const registration = await getHardwareRegistration(ctx.user.id, input.registrationId);
+      if (!registration) throw new TRPCError({ code: "NOT_FOUND", message: "Registered device not found" });
+      if (!canActivateSoundAccess({ ownerUserId: registration.ownerUserId, actorUserId: ctx.user.id, state: registration.activationState, consentGranted: input.consentGranted, noticeVersion: input.noticeVersion })) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Sound access requires an owner-approved disabled registration and the current consent notice" });
+      return activateHardwareRegistration(ctx.user.id, registration.id, { registrationId: registration.id, ownerUserId: ctx.user.id, event: "granted", noticeVersion: input.noticeVersion, purpose: hardwarePurpose });
+    }),
+    revoke: protectedProcedure.input(z.object({ registrationId: z.number().int().positive() }).strict()).mutation(async ({ ctx, input }) => {
+      const registration = await getHardwareRegistration(ctx.user.id, input.registrationId);
+      if (!registration) throw new TRPCError({ code: "NOT_FOUND", message: "Registered device not found" });
+      if (!canRevokeSoundAccess(registration.ownerUserId, ctx.user.id, registration.activationState)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only an active owner-scoped sound-access profile can be revoked" });
+      return revokeHardwareRegistration(ctx.user.id, registration.id, { registrationId: registration.id, ownerUserId: ctx.user.id, event: "revoked", noticeVersion: registration.consentNoticeVersion ?? SOUND_ACCESS_NOTICE_VERSION, purpose: hardwarePurpose });
     }),
   }),
   studio: router({

@@ -92,8 +92,8 @@ export async function getUserByOpenId(openId: string) {
 // TODO: add feature queries here as your schema grows.
 
 
-import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry } from "../drizzle/schema";
-import { contactEnquiries, generationJobs, samplerOutputs, studioAssets } from "../drizzle/schema";
+import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry, InsertHardwareRegistration, InsertHardwareConsentEvent } from "../drizzle/schema";
+import { contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, studioAssets } from "../drizzle/schema";
 
 export async function createStudioAsset(asset: InsertStudioAsset) {
   const db = await getDb();
@@ -166,4 +166,42 @@ export async function listContactEnquiries(ownerUserId: number) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(contactEnquiries).where(eq(contactEnquiries.ownerUserId, ownerUserId)).orderBy(contactEnquiries.createdAt);
+}
+
+export async function createHardwareRegistration(registration: InsertHardwareRegistration) {
+  const db = await getDb();
+  if (!db) throw new Error("Device registration service is temporarily unavailable");
+  const result = await db.insert(hardwareRegistrations).values(registration);
+  return { id: Number(result[0].insertId), ...registration };
+}
+
+export async function listHardwareRegistrations(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(hardwareRegistrations).where(eq(hardwareRegistrations.ownerUserId, ownerUserId)).orderBy(hardwareRegistrations.updatedAt);
+}
+
+export async function getHardwareRegistration(ownerUserId: number, registrationId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  const records = await db.select().from(hardwareRegistrations).where(and(eq(hardwareRegistrations.ownerUserId, ownerUserId), eq(hardwareRegistrations.id, registrationId))).limit(1);
+  return records[0];
+}
+
+export async function activateHardwareRegistration(ownerUserId: number, registrationId: number, event: InsertHardwareConsentEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Device registration service is temporarily unavailable");
+  const now = new Date();
+  await db.update(hardwareRegistrations).set({ activationState: "active", consentNoticeVersion: event.noticeVersion, consentedAt: now, revokedAt: null }).where(and(eq(hardwareRegistrations.ownerUserId, ownerUserId), eq(hardwareRegistrations.id, registrationId)));
+  await db.insert(hardwareConsentEvents).values({ ...event, createdAt: now });
+  return { registrationId, activationState: "active" as const, consentedAt: now };
+}
+
+export async function revokeHardwareRegistration(ownerUserId: number, registrationId: number, event: InsertHardwareConsentEvent) {
+  const db = await getDb();
+  if (!db) throw new Error("Device registration service is temporarily unavailable");
+  const now = new Date();
+  await db.update(hardwareRegistrations).set({ activationState: "revoked", revokedAt: now }).where(and(eq(hardwareRegistrations.ownerUserId, ownerUserId), eq(hardwareRegistrations.id, registrationId)));
+  await db.insert(hardwareConsentEvents).values({ ...event, createdAt: now });
+  return { registrationId, activationState: "revoked" as const, revokedAt: now };
 }

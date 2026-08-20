@@ -89,3 +89,33 @@ export const contactEnquiries = mysqlTable("contact_enquiries", {
 
 export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
 export type InsertContactEnquiry = typeof contactEnquiries.$inferInsert;
+
+export const hardwareRegistrations = mysqlTable("hardware_registrations", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id),
+  label: varchar("label", { length: 120 }).notNull(),
+  category: mysqlEnum("category", ["computer", "standalone", "audio-interface", "midi-controller", "other"]).notNull(),
+  productReference: varchar("productReference", { length: 160 }),
+  activationState: mysqlEnum("activationState", ["disabled", "active", "revoked"]).default("disabled").notNull(),
+  consentNoticeVersion: varchar("consentNoticeVersion", { length: 80 }),
+  consentedAt: timestamp("consentedAt"),
+  revokedAt: timestamp("revokedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type HardwareRegistration = typeof hardwareRegistrations.$inferSelect;
+export type InsertHardwareRegistration = typeof hardwareRegistrations.$inferInsert;
+
+export const hardwareConsentEvents = mysqlTable("hardware_consent_events", {
+  id: int("id").autoincrement().primaryKey(),
+  registrationId: int("registrationId").notNull().references(() => hardwareRegistrations.id),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id),
+  event: mysqlEnum("event", ["granted", "revoked"]).notNull(),
+  noticeVersion: varchar("noticeVersion", { length: 80 }).notNull(),
+  purpose: varchar("purpose", { length: 240 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type HardwareConsentEvent = typeof hardwareConsentEvents.$inferSelect;
+export type InsertHardwareConsentEvent = typeof hardwareConsentEvents.$inferInsert;

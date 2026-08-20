@@ -88,3 +88,17 @@
 - [x] Add visible Channel Rack, Mix Bus, and Stereo Out recovery status indicators.
 - [x] Add a user-gesture recovery action that resets muted media, resumes AudioContext, unmutes the active channel, and reconnects it safely.
 - [x] Verify typecheck, 9 Vitest assertions, production build, and desktop/mobile UI for the repaired audio chain.
+
+## Verified Launch Content and Consent-First Device Activation
+
+- [x] Audit the current hardware catalogue and replace only launch claims that can be corroborated by official manufacturer sources.
+- [x] Add a dated launch-specification ledger that names the source and clearly distinguishes PARKWAY concepts from third-party hardware facts.
+- [x] Define a minimal, owner-scoped hardware-registration record with explicit purpose, consent notice version, activation state, and immediate revocation.
+- [x] Add protected registration, consent grant, and revocation procedures that reject serial numbers, passwords, payment data, and hidden device telemetry.
+- [x] Build a multifunction Devices & Sound Access view with browser-safe playback unlock, registration, sound-access status, and revoke controls.
+- [x] Add automated tests that enforce disabled-by-default activation, owner scope, consent requirement, and revocation behavior.
+- [x] Update the reusable PARKWAY cloud music-studio skill with the verified product-content and consent-first activation workflow, then validate it.
+- [x] Verify the expanded launch and studio interface on desktop/mobile, run typecheck, 12 Vitest assertions, and a production build.
+- [ ] Publish the verified launch and consent-first device-access release.
+- [x] Add API-level Vitest coverage for protected hardware register, activate, and revoke procedures, including unauthenticated denial, disabled creation, consent rejection, owner scope, and revocation behavior.
+- [x] Add procedure-specific unauthenticated tests for hardware register, activate, and revoke, plus an API-level non-owner revoke denial test.
