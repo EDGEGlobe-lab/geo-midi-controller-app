@@ -1,0 +1,5 @@
+import { RadioTower, Signal } from "lucide-react";
+
+export function Inf4RadarDisplay({ active, stationLabel }: { active: boolean; stationLabel: string }) {
+  return <section className={`inf4-radar ${active ? "is-active" : ""}`} aria-label="INF4 Radio Radar software signal display"><div className="inf4-copy"><div className="section-kicker"><RadioTower size={13} /> INF4 Radio Radar / software signal display</div><strong>Audio Transmitter Channel</strong><small>{active ? `${stationLabel} · project-preview signal active` : "Arranger signal standing by"}</small><em>Abstract display only · no physical broadcast or hardware control</em></div><div className="radar-stage" aria-hidden="true"><i className="radar-ring ring-one" /><i className="radar-ring ring-two" /><i className="radar-ring ring-three" /><b className="radar-sweep" /><span className="radar-node node-one" /><span className="radar-node node-two" /><span className="radar-node node-three" /><div className="radar-core"><Signal size={18} /></div></div></section>;
+}

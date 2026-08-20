@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { activateHardwareRegistration, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, deleteAudioSource, getHardwareRegistration, getUserByOpenId, listAudioSourceHistory, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listSavedRadioStations, listStudioAssets, removeSavedRadioStation, restoreAudioSource, revokeHardwareRegistration, saveRadioStation, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
+import { activateHardwareRegistration, assignCompatibilityReviewer, createCompatibilityFeedback, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, decideCompatibilityFeedback, deleteAudioSource, getHardwareRegistration, getUserByOpenId, listAdminReviewers, listAudioSourceHistory, listCompatibilityFeedback, listCompatibilityReviewEvents, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listSavedRadioStations, listStudioAssets, removeSavedRadioStation, restoreAudioSource, revokeHardwareRegistration, saveRadioStation, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
@@ -29,6 +29,17 @@ const hardwareRegistrationSchema = z.object({
   productReference: z.string().trim().min(2).max(160).optional(),
 }).strict();
 const hardwarePurpose = "Store this owner-selected device label and enable PARKWAY browser sound and MIDI controls; no serials, telemetry, third-party licence, or device control.";
+const compatibilityFeedbackSchema = z.object({
+  deviceCategory: z.enum(["phone", "tablet", "desktop", "laptop", "other"]),
+  browserFamily: z.enum(["safari", "chrome", "edge", "firefox", "other"]),
+  issueType: z.enum(["audio-output", "playback", "layout", "accessibility", "other"]),
+  osVersion: z.string().trim().max(80).optional().default(""),
+  message: z.string().trim().min(12).max(2000),
+  website: z.string().max(0).optional().default(""),
+}).strict();
+const secretLikeFeedback = /\b(password|passcode|api[ _-]?key|token|secret|private key|credit card|debit card|bank|iban|cvv|serial number)\b|\b\d{13,19}\b/i;
+const assertNoSensitiveFeedback = (value: string) => { if (secretLikeFeedback.test(value)) throw new TRPCError({ code: "BAD_REQUEST", message: "Do not include passwords, keys, payment details, serial numbers, or other sensitive information in compatibility feedback" }); };
+const requireAdmin = (role: string) => { if (role !== "admin") throw new TRPCError({ code: "FORBIDDEN", message: "Reviewer assignment and approval history are limited to authorized staff" }); };
 
 export const appRouter = router({
   system: systemRouter,
@@ -57,6 +68,30 @@ export const appRouter = router({
       const owner = await getUserByOpenId(ENV.ownerOpenId);
       if (!owner || ctx.user.role !== "admin" || ctx.user.id !== owner.id) throw new TRPCError({ code: "FORBIDDEN", message: "Contact enquiries are limited to the project owner" });
       return listContactEnquiries(owner.id);
+    }),
+  }),
+  compatibility: router({
+    submit: publicProcedure.input(compatibilityFeedbackSchema).mutation(({ input }) => {
+      assertNoSensitiveFeedback(`${input.osVersion}\n${input.message}`);
+      return createCompatibilityFeedback({ deviceCategory: input.deviceCategory, browserFamily: input.browserFamily, issueType: input.issueType, osVersion: input.osVersion || null, message: input.message, status: "submitted", assignedReviewerUserId: null });
+    }),
+    review: router({
+      list: protectedProcedure.query(({ ctx }) => { requireAdmin(ctx.user.role); return listCompatibilityFeedback(); }),
+      reviewers: protectedProcedure.query(({ ctx }) => { requireAdmin(ctx.user.role); return listAdminReviewers(); }),
+      history: protectedProcedure.input(z.object({ feedbackId: z.number().int().positive() }).strict()).query(({ ctx, input }) => { requireAdmin(ctx.user.role); return listCompatibilityReviewEvents(input.feedbackId); }),
+      assign: protectedProcedure.input(z.object({ feedbackId: z.number().int().positive(), reviewerUserId: z.number().int().positive() }).strict()).mutation(async ({ ctx, input }) => {
+        requireAdmin(ctx.user.role);
+        const assigned = await assignCompatibilityReviewer(ctx.user.id, input.feedbackId, input.reviewerUserId);
+        if (!assigned) throw new TRPCError({ code: "NOT_FOUND", message: "Submission or authorized reviewer not found" });
+        return assigned;
+      }),
+      decide: protectedProcedure.input(z.object({ feedbackId: z.number().int().positive(), event: z.enum(["approved", "changes-requested", "rejected", "closed"]), note: z.string().trim().max(600).optional() }).strict()).mutation(async ({ ctx, input }) => {
+        requireAdmin(ctx.user.role);
+        assertNoSensitiveFeedback(input.note ?? "");
+        const result = await decideCompatibilityFeedback(ctx.user.id, input.feedbackId, input.event, input.note);
+        if (!result) throw new TRPCError({ code: "NOT_FOUND", message: "Submission not found" });
+        return result;
+      }),
     }),
   }),
   hardware: router({

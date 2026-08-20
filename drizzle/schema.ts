@@ -124,6 +124,35 @@ export const contactEnquiries = mysqlTable("contact_enquiries", {
 export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
 export type InsertContactEnquiry = typeof contactEnquiries.$inferInsert;
 
+export const compatibilityFeedback = mysqlTable("compatibility_feedback", {
+  id: int("id").autoincrement().primaryKey(),
+  deviceCategory: mysqlEnum("deviceCategory", ["phone", "tablet", "desktop", "laptop", "other"]).notNull(),
+  browserFamily: mysqlEnum("browserFamily", ["safari", "chrome", "edge", "firefox", "other"]).notNull(),
+  issueType: mysqlEnum("issueType", ["audio-output", "playback", "layout", "accessibility", "other"]).notNull(),
+  osVersion: varchar("osVersion", { length: 80 }),
+  message: text("message").notNull(),
+  status: mysqlEnum("status", ["submitted", "assigned", "approved", "changes-requested", "rejected", "closed"]).default("submitted").notNull(),
+  assignedReviewerUserId: int("assignedReviewerUserId").references(() => users.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type CompatibilityFeedback = typeof compatibilityFeedback.$inferSelect;
+export type InsertCompatibilityFeedback = typeof compatibilityFeedback.$inferInsert;
+
+export const compatibilityReviewEvents = mysqlTable("compatibility_review_events", {
+  id: int("id").autoincrement().primaryKey(),
+  feedbackId: int("feedbackId").notNull().references(() => compatibilityFeedback.id),
+  actorUserId: int("actorUserId").notNull().references(() => users.id),
+  reviewerUserId: int("reviewerUserId").references(() => users.id),
+  event: mysqlEnum("event", ["assigned", "approved", "changes-requested", "rejected", "closed"]).notNull(),
+  note: varchar("note", { length: 600 }),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type CompatibilityReviewEvent = typeof compatibilityReviewEvents.$inferSelect;
+export type InsertCompatibilityReviewEvent = typeof compatibilityReviewEvents.$inferInsert;
+
 export const hardwareRegistrations = mysqlTable("hardware_registrations", {
   id: int("id").autoincrement().primaryKey(),
   ownerUserId: int("ownerUserId").notNull().references(() => users.id),

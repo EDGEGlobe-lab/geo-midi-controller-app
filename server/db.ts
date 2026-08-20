@@ -92,8 +92,8 @@ export async function getUserByOpenId(openId: string) {
 // TODO: add feature queries here as your schema grows.
 
 
-import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry, InsertHardwareRegistration, InsertHardwareConsentEvent } from "../drizzle/schema";
-import { activeAudioSources, audioSourceEvents, contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, savedRadioStations, studioAssets } from "../drizzle/schema";
+import type { InsertCompatibilityFeedback, InsertCompatibilityReviewEvent, InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry, InsertHardwareRegistration, InsertHardwareConsentEvent } from "../drizzle/schema";
+import { activeAudioSources, audioSourceEvents, compatibilityFeedback, compatibilityReviewEvents, contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, savedRadioStations, studioAssets } from "../drizzle/schema";
 
 export async function createStudioAsset(asset: InsertStudioAsset) {
   const db = await getDb();
@@ -260,4 +260,66 @@ export async function revokeHardwareRegistration(ownerUserId: number, registrati
   await db.update(hardwareRegistrations).set({ activationState: "revoked", revokedAt: now }).where(and(eq(hardwareRegistrations.ownerUserId, ownerUserId), eq(hardwareRegistrations.id, registrationId)));
   await db.insert(hardwareConsentEvents).values({ ...event, createdAt: now });
   return { registrationId, activationState: "revoked" as const, revokedAt: now };
+}
+
+export async function createCompatibilityFeedback(feedback: InsertCompatibilityFeedback) {
+  const db = await getDb();
+  if (!db) throw new Error("Compatibility feedback is temporarily unavailable");
+  const result = await db.insert(compatibilityFeedback).values(feedback);
+  return { id: Number(result[0].insertId), ...feedback };
+}
+
+export async function listCompatibilityFeedback() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(compatibilityFeedback).orderBy(compatibilityFeedback.updatedAt);
+}
+
+export async function getCompatibilityFeedback(feedbackId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  return (await db.select().from(compatibilityFeedback).where(eq(compatibilityFeedback.id, feedbackId)).limit(1))[0];
+}
+
+export async function listCompatibilityReviewEvents(feedbackId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(compatibilityReviewEvents).where(eq(compatibilityReviewEvents.feedbackId, feedbackId)).orderBy(compatibilityReviewEvents.createdAt);
+}
+
+export async function listAdminReviewers() {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select({ id: users.id, name: users.name, email: users.email, role: users.role }).from(users).where(eq(users.role, "admin"));
+}
+
+export async function getAdminReviewer(reviewerUserId: number) {
+  const db = await getDb();
+  if (!db) return undefined;
+  return (await db.select({ id: users.id, role: users.role }).from(users).where(and(eq(users.id, reviewerUserId), eq(users.role, "admin"))).limit(1))[0];
+}
+
+export async function assignCompatibilityReviewer(actorUserId: number, feedbackId: number, reviewerUserId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Compatibility review is temporarily unavailable");
+  const feedback = await getCompatibilityFeedback(feedbackId);
+  const reviewer = await getAdminReviewer(reviewerUserId);
+  if (!feedback || !reviewer) return undefined;
+  const now = new Date();
+  await db.update(compatibilityFeedback).set({ assignedReviewerUserId: reviewerUserId, status: "assigned" }).where(eq(compatibilityFeedback.id, feedbackId));
+  const event: InsertCompatibilityReviewEvent = { feedbackId, actorUserId, reviewerUserId, event: "assigned", note: null, createdAt: now };
+  await db.insert(compatibilityReviewEvents).values(event);
+  return { feedbackId, reviewerUserId, status: "assigned" as const, updatedAt: now };
+}
+
+export async function decideCompatibilityFeedback(actorUserId: number, feedbackId: number, eventType: "approved" | "changes-requested" | "rejected" | "closed", note?: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Compatibility review is temporarily unavailable");
+  const feedback = await getCompatibilityFeedback(feedbackId);
+  if (!feedback) return undefined;
+  const now = new Date();
+  await db.update(compatibilityFeedback).set({ status: eventType }).where(eq(compatibilityFeedback.id, feedbackId));
+  const event: InsertCompatibilityReviewEvent = { feedbackId, actorUserId, reviewerUserId: feedback.assignedReviewerUserId, event: eventType, note: note || null, createdAt: now };
+  await db.insert(compatibilityReviewEvents).values(event);
+  return { feedbackId, status: eventType, updatedAt: now };
 }

@@ -163,3 +163,14 @@
 - [x] Treat expected media cancellation as a quiet state transition while preserving visible errors for real playback failures.
 - [x] Add regression coverage for aborted playback transitions and verify typecheck, 36 tests, production build, and the affected radio interaction.
 - [ ] Publish the abort-recovery fix and request user confirmation.
+
+## Review Governance, Compatibility Feedback, and INF4 Display
+
+- [x] Define administrator-only reviewer assignment and approval-history boundaries, with no client-side authority escalation.
+- [x] Add public anonymous compatibility submissions with centralized administrator-only reviewer assignment, approval-event records, and audited state transitions; no submitter identity is collected.
+- [x] Add a privacy-minimised compatibility feedback form that accepts user-entered device category, browser family, issue type, optional OS version, and narrative, while rejecting credentials and payment data.
+- [x] Build protected staff review and approval-history views plus public feedback intake with clear status and empty states.
+- [x] Add an original INF4 Radio Radar / Audio Transmitter arranger visualization, labelled as a software signal display with no physical broadcast control.
+- [x] Add an explicit user-gesture Recover & Play path with visible Channel Rack, Mix Bus, and Stereo Out diagnostics; audible output remains pending real-device confirmation.
+- [x] Repair the stale `canActivateSoundAccess` runtime module graph by restarting the development service, then re-verify review, feedback, recovery, typecheck, 39 tests, production build, and responsive UI.
+- [ ] Publish the review, feedback, INF4, and recovery update and request real-device audio confirmation.
