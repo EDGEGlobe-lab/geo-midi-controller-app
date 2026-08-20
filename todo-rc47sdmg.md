@@ -53,3 +53,11 @@
 - [x] Add frontend checkout success/cancel feedback and verify return states.
 - [x] Verify payment UI at desktop/mobile sizes and document required sandbox test steps.
 - [x] Save a checkpoint and deliver the payment-ready project.
+
+## Payment Authority Removal
+
+- [x] Audit all Stripe payment code, checkout UI, webhook routes, dependencies, and product definitions.
+- [x] Remove Stripe Checkout, webhook processing, payment catalog, and payment-related UI controls.
+- [x] Remove the Stripe SDK dependency and confirm no website code can initiate payment collection.
+- [x] Preserve all music-studio functions and add no Revolut, Wise, card, Windcave, or banking integration.
+- [x] Verify the disabled payment state, checkpoint, and deliver the non-payment website.
