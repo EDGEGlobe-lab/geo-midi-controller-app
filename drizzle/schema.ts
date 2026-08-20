@@ -75,3 +75,17 @@ export const samplerOutputs = mysqlTable("sampler_outputs", {
 
 export type SamplerOutput = typeof samplerOutputs.$inferSelect;
 export type InsertSamplerOutput = typeof samplerOutputs.$inferInsert;
+
+export const contactEnquiries = mysqlTable("contact_enquiries", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id),
+  name: varchar("name", { length: 160 }).notNull(),
+  email: varchar("email", { length: 320 }).notNull(),
+  serviceInterest: varchar("serviceInterest", { length: 120 }).notNull(),
+  message: text("message").notNull(),
+  paymentDetailsRequested: int("paymentDetailsRequested").default(0).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type ContactEnquiry = typeof contactEnquiries.$inferSelect;
+export type InsertContactEnquiry = typeof contactEnquiries.$inferInsert;

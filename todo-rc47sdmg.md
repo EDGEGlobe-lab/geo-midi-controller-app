@@ -61,3 +61,22 @@
 - [x] Remove the Stripe SDK dependency and confirm no website code can initiate payment collection.
 - [x] Preserve all music-studio functions and add no Revolut, Wise, card, Windcave, or banking integration.
 - [x] Verify the disabled payment state, checkpoint, and deliver the non-payment website.
+
+## Non-Transactional Client Enquiries
+
+- [x] Create and validate a reusable safe payment-removal and client-enquiry workflow skill.
+- [x] Add a minimal contact enquiry data model with service interest and payment-detail follow-up preference.
+- [x] Scope contact enquiries to the single project owner and restrict inbox listing to that owner.
+- [x] Add a secure non-transactional contact form with clear payment-boundary copy.
+- [x] Add tests for non-admin denial and strict rejection of payment-related fields.
+- [x] Save a fresh checkpoint and deliver the contact workflow after owner-scope verification.
+
+## Stereo Reliability and Compact Studio Performance
+
+- [x] Inspect the current Web Audio graph and locate the mute or stereo-output failure path.
+- [x] Add a browser-safe audio-enable control and a persistent 45% minimum master-volume floor.
+- [x] Preserve user volume choices above the floor without forcing automatic sound playback.
+- [x] Research rights-respecting instruments, audio engineering, and creator-protection patterns for the studio roadmap.
+- [x] Compact the workspace into clearer multi-function views for production, performance, Studio, Assets, and Contact.
+- [x] Test source code, typecheck, tests, production build, and desktop/mobile compact layouts.
+- [ ] Confirm audible output on the user’s selected stereo device by clicking Enable Stereo and then Play; browser autoplay policy requires this final user gesture.

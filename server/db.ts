@@ -92,8 +92,8 @@ export async function getUserByOpenId(openId: string) {
 // TODO: add feature queries here as your schema grows.
 
 
-import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput } from "../drizzle/schema";
-import { generationJobs, samplerOutputs, studioAssets } from "../drizzle/schema";
+import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry } from "../drizzle/schema";
+import { contactEnquiries, generationJobs, samplerOutputs, studioAssets } from "../drizzle/schema";
 
 export async function createStudioAsset(asset: InsertStudioAsset) {
   const db = await getDb();
@@ -153,4 +153,17 @@ export async function listSamplerOutputs(userId: number, projectKey: string) {
   const db = await getDb();
   if (!db) return [];
   return db.select().from(samplerOutputs).where(and(eq(samplerOutputs.userId, userId), eq(samplerOutputs.projectKey, projectKey)));
+}
+
+export async function createContactEnquiry(enquiry: InsertContactEnquiry) {
+  const db = await getDb();
+  if (!db) throw new Error("Contact service is temporarily unavailable");
+  const result = await db.insert(contactEnquiries).values(enquiry);
+  return { id: Number(result[0].insertId), ...enquiry };
+}
+
+export async function listContactEnquiries(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(contactEnquiries).where(eq(contactEnquiries.ownerUserId, ownerUserId)).orderBy(contactEnquiries.createdAt);
 }

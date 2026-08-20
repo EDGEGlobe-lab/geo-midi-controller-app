@@ -107,6 +107,20 @@ function MediaPreviewPlayer({ options, value, label, detail, bars, duration, cur
   return <section className="media-preview-panel panel"><div className="panel-header"><div><div className="section-kicker"><Waves size={13} /> Media preview / local Web Audio</div><h2>{label} <span className="muted-slash">/</span> <span>{detail}</span></h2></div><span className="small-pill">{normalized ? "PEAK SAFE" : "RAW PREVIEW"}</span></div><div className="preview-toolbar"><select aria-label="Preview source" value={value} onChange={(event) => onSourceChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><button className="outline-button outline-small" onClick={() => onZoom(Math.max(1, zoom - 1))}>− Zoom</button><span className="zoom-readout">{zoom}× GRID</span><button className="outline-button outline-small" onClick={() => onZoom(Math.min(4, zoom + 1))}>+ Zoom</button><button className={`normalize-button ${normalized ? "is-on" : ""}`} onClick={onNormalize}>Peak normalize {normalized ? "ON" : "OFF"}</button></div><div className="preview-wave-scroll"><div className="preview-waveform" role="slider" tabIndex={0} aria-label={`Scrub ${label}; ${formatTime(currentTime)} of ${formatTime(duration)}`} aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(currentTime)} onPointerDown={onScrub} onKeyDown={(event) => { if (event.key === "ArrowLeft") { event.preventDefault(); onNudge(-5); } if (event.key === "ArrowRight") { event.preventDefault(); onNudge(5); } if (event.key === "Home") { event.preventDefault(); onNudge(-duration); } if (event.key === "End") { event.preventDefault(); onNudge(duration); } }}>{bars.map((bar, index) => <i key={index} style={{ height: `${Math.max(9, bar)}%` }} />)}<span className="preview-playhead" style={{ left: `${progress}%` }} /></div></div><div className="preview-footer"><button className="transport-play" onClick={onTogglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className="text-button" onClick={() => onNudge(-5)}>−5 s</button><span>{formatTime(currentTime)} / {formatTime(duration)}</span><button className="text-button" onClick={() => onNudge(5)}>+5 s</button><small>Passcode grid / pattern-net visual mode · original UI motif</small></div></section>;
 }
 
+type ContactDraft = { name: string; email: string; serviceInterest: "production" | "mix-master" | "studio-system" | "other"; message: string; paymentDetailsRequested: boolean; website: string };
+function ContactPanel({ draft, setDraft, pending, onSubmit }: { draft: ContactDraft; setDraft: React.Dispatch<React.SetStateAction<ContactDraft>>; pending: boolean; onSubmit: () => void }) {
+  return <section className="contact-panel panel"><div className="panel-header"><div><div className="section-kicker"><Radio size={13} /> Client enquiry / non-transactional</div><h2>Start a service conversation <span className="muted-slash">/</span> <span>secure follow-up</span></h2></div><span className="small-pill">NO PAYMENT DATA</span></div><p className="contact-copy">Describe the production service you need. You may request payment details for a later direct conversation, but never send card numbers, bank-account details, transfer credentials, or identity documents through this form.</p><form className="contact-form" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><input className="contact-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" value={draft.website} onChange={(event) => setDraft((value) => ({ ...value, website: event.target.value }))} /><label><span>Name</span><input required minLength={2} maxLength={160} value={draft.name} onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} placeholder="Your name" /></label><label><span>Email</span><input required type="email" maxLength={320} value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} placeholder="you@example.com" /></label><label><span>Service interest</span><select value={draft.serviceInterest} onChange={(event) => setDraft((value) => ({ ...value, serviceInterest: event.target.value as ContactDraft["serviceInterest"] }))}><option value="production">Music production</option><option value="mix-master">Mixing & mastering</option><option value="studio-system">Studio system design</option><option value="other">Other service</option></select></label><label className="contact-message"><span>Project brief</span><textarea required minLength={12} maxLength={4000} value={draft.message} onChange={(event) => setDraft((value) => ({ ...value, message: event.target.value }))} placeholder="Tell us about the project, timeline, and the help you need." /></label><label className="contact-check"><input type="checkbox" checked={draft.paymentDetailsRequested} onChange={(event) => setDraft((value) => ({ ...value, paymentDetailsRequested: event.target.checked }))} /><span>Request payment details for a later direct follow-up.</span></label><button className="solid-button" disabled={pending} type="submit">{pending ? "Sending enquiry…" : "Send service enquiry"}</button></form></section>;
+}
+
+function StereoControl({ master, status, compact, onEnable, onMasterChange, onCompactToggle }: { master: number; status: "locked" | "ready" | "error"; compact: boolean; onEnable: () => void; onMasterChange: (value: number) => void; onCompactToggle: () => void }) {
+  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 45 percent" type="range" min="45" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
+}
+
+type AssetFocusItem = { id: number; filename: string; assetType: string; durationMs: number | null; tags: string | null };
+function AssetFocusPanel({ assets, authenticated, onOpenStudio }: { assets: AssetFocusItem[]; authenticated: boolean; onOpenStudio: () => void }) {
+  return <section className="asset-focus-panel panel"><div className="panel-header"><div><div className="section-kicker"><FolderOpen size={13} /> Assets / compact focus</div><h2>Project materials <span className="muted-slash">/</span> <span>{assets.length} indexed</span></h2></div><button className="outline-button outline-small" onClick={onOpenStudio}>Open asset workbench</button></div><p>Use this lightweight view to review project material and move into the Studio workbench only when you need upload, tagging, waveform, or sampler controls.</p>{authenticated ? <div className="asset-focus-list">{assets.length ? assets.slice(0, 8).map((asset) => <article key={asset.id}><span>{asset.assetType.toUpperCase()}</span><strong>{asset.filename}</strong><small>{formatDuration(asset.durationMs)} · {parseTags(asset.tags).map((tag) => `#${tag}`).join(" ") || "untagged"}</small></article>) : <div className="asset-empty">No assets yet. Open the workbench to add an original recording, vocal, SFX, sample, or motion reference.</div>}</div> : <div className="asset-empty">Sign in to see your private project asset index.</div>}</section>;
+}
+
 export default function Home() {
   // The useAuth hook provides authentication state.
   // To implement login/logout, call logout(), or start login from an event
@@ -133,11 +147,13 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [tempo, setTempo] = useState(156);
-  const [master, setMaster] = useState(82);
+  const [master, setMaster] = useState(() => Math.max(45, Math.min(100, Number(window.localStorage.getItem("parkway-master-volume") ?? 82) || 82)));
+  const [stereoStatus, setStereoStatus] = useState<"locked" | "ready" | "error">("locked");
+  const [compactMode, setCompactMode] = useState(() => window.localStorage.getItem("parkway-compact-mode") === "true");
   const [activeBar, setActiveBar] = useState(8);
   const [selectedTrack, setSelectedTrack] = useState("pluck");
   const [activeView, setActiveView] = useState("Arrangement");
-  const [showBrowser, setShowBrowser] = useState(true);
+  const [showBrowser, setShowBrowser] = useState(() => window.innerWidth >= 760);
   const [tracksState, setTracksState] = useState<TrackState[]>(() => tracks.map((track) => ({ ...track, muted: false, solo: false, armed: track.id === "pluck" })));
   const [loopRegion, setLoopRegion] = useState({ start: 2, end: 14 });
   const [draggingHandle, setDraggingHandle] = useState<"start" | "end" | null>(null);
@@ -156,6 +172,7 @@ export default function Home() {
   const [samplerLaneState, setSamplerLaneState] = useState<Record<string, "ready" | "queued" | "complete">>(() => Object.fromEntries(samplerSeeds.map((item) => [item.id, "ready"])));
   const [assetTags, setAssetTags] = useState("night-drive, neon-pink");
   const [assetFilterTag, setAssetFilterTag] = useState("all");
+  const [contactDraft, setContactDraft] = useState<ContactDraft>({ name: "", email: "", serviceInterest: "production", message: "", paymentDetailsRequested: false, website: "" });
   const [previewAssetId, setPreviewAssetId] = useState<number | null>(null);
   const [waveformZoom, setWaveformZoom] = useState(1);
   const [peakNormalize, setPeakNormalize] = useState(false);
@@ -170,6 +187,7 @@ export default function Home() {
   const createJob = trpc.studio.jobs.create.useMutation();
   const transitionJob = trpc.studio.jobs.transition.useMutation();
   const createSamplerOutput = trpc.studio.sampler.create.useMutation();
+  const contactSubmit = trpc.contact.submit.useMutation();
   const selected = tracksState.find((track) => track.id === selectedTrack) ?? tracksState[0];
   const activeCount = tracksState.filter((track) => !track.muted).length;
   const soloActive = tracksState.some((track) => track.solo);
@@ -230,9 +248,11 @@ export default function Home() {
       const normalizer = context.createDynamicsCompressor();
       const previewGain = context.createGain();
       const masterGain = context.createGain();
+      audioRef.current.muted = false;
+      audioRef.current.volume = 1;
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.78;
-      masterGain.gain.value = master / 100;
+      masterGain.gain.value = Math.max(45, master) / 100;
       normalizer.threshold.value = 0;
       normalizer.knee.value = 0;
       normalizer.ratio.value = 1;
@@ -246,6 +266,7 @@ export default function Home() {
       previewGainRef.current = previewGain;
       masterGainRef.current = masterGain;
       audioContextRef.current = context;
+      context.onstatechange = () => setStereoStatus(context.state === "running" ? "ready" : "locked");
       tracksState.forEach((track) => {
         const gain = context.createGain();
         const pan = context.createStereoPanner();
@@ -258,7 +279,6 @@ export default function Home() {
       const activeNode = trackNodesRef.current[selectedTrack];
       if (activeNode) source.connect(activeNode.gain);
     }
-    if (audioContextRef.current.state === "suspended") void audioContextRef.current.resume();
     return audioContextRef.current;
   };
 
@@ -280,8 +300,15 @@ export default function Home() {
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
-    if (masterGain) masterGain.gain.value = master / 100;
+    const safeMaster = Math.max(45, Math.min(100, master));
+    if (safeMaster !== master) { setMaster(safeMaster); return; }
+    window.localStorage.setItem("parkway-master-volume", String(safeMaster));
+    if (masterGain && audioContextRef.current) masterGain.gain.setTargetAtTime(safeMaster / 100, audioContextRef.current.currentTime, 0.025);
   }, [master]);
+
+  useEffect(() => {
+    window.localStorage.setItem("parkway-compact-mode", String(compactMode));
+  }, [compactMode]);
 
   useEffect(() => {
     const normalizer = normalizerRef.current;
@@ -322,16 +349,35 @@ export default function Home() {
     setIsPlaying(false);
   }, [currentTrackId, previewAssetId]);
 
+  const enableStereo = async () => {
+    const context = ensureAudioGraph();
+    if (!context || !audioRef.current) { setStereoStatus("error"); toast.error("Stereo output is not supported in this browser."); return false; }
+    try {
+      audioRef.current.muted = false;
+      audioRef.current.volume = 1;
+      if (context.state !== "running") await context.resume();
+      setStereoStatus("ready");
+      toast.success("Stereo output enabled. Master level is protected at 45% or above.");
+      return true;
+    } catch (error) {
+      console.error(error);
+      setStereoStatus("error");
+      toast.error("Stereo output is blocked. Use Enable Stereo again after interacting with the page.");
+      return false;
+    }
+  };
+
   const togglePlay = async () => {
     if (!audioRef.current) return;
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); return; }
     try {
-      const context = ensureAudioGraph();
-      if (context?.state === "suspended") await context.resume();
+      if (!await enableStereo()) return;
       await audioRef.current.play();
       setIsPlaying(true);
+      setStereoStatus("ready");
     } catch (error) {
       console.error(error);
+      setStereoStatus("error");
       toast.error("Audio preview could not start. Check the selected source and browser output.");
     }
   };
@@ -361,6 +407,15 @@ export default function Home() {
     if (kind === "asset") { setPreviewAssetId(Number(rawId)); return; }
     setPreviewAssetId(null);
     setCurrentTrackId(rawId as (typeof AUDIO_TRACKS)[number]["id"]);
+  };
+  const submitContactEnquiry = async () => {
+    try {
+      await contactSubmit.mutateAsync(contactDraft);
+      setContactDraft({ name: "", email: "", serviceInterest: "production", message: "", paymentDetailsRequested: false, website: "" });
+      toast.success("Enquiry received. We will follow up using the contact details you provided.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "The enquiry could not be sent");
+    }
   };
 
   const updateTrack = (id: string, update: Partial<TrackState>) => {
@@ -412,7 +467,7 @@ export default function Home() {
   const visibleAssets = useMemo(() => (assetsQuery.data ?? []).filter((asset) => assetFilterTag === "all" || parseTags(asset.tags).includes(assetFilterTag)), [assetsQuery.data, assetFilterTag]);
 
   return (
-    <main className="parkway-app">
+    <main className={`parkway-app ${compactMode ? "compact-mode" : ""}`}>
       <audio ref={audioRef} src={previewSource} preload="metadata" loop={isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); }} onError={() => toast.error(`Audio source failed to load: ${previewLabel}`)} />
       <div className="parkway-grid" />
       <aside className={`sidebar ${showBrowser ? "sidebar-open" : "sidebar-collapsed"}`}>
@@ -420,7 +475,7 @@ export default function Home() {
         {showBrowser && <>
           <div className="side-label">Workspace</div>
           <nav className="side-nav">
-            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
+            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Assets", icon: FolderOpen }, { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
           </nav>
           <div className="side-label">Project</div>
           <div className="project-card"><div className="project-orbit"><Disc3 size={18} /></div><div className="min-w-0"><div className="project-title">Night Drive / 07</div><div className="project-meta">D major · 156 BPM</div></div><ChevronDown size={14} className="text-muted" /></div>
@@ -434,7 +489,8 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar"><div className="topbar-left"><button className="mobile-menu" onClick={() => setShowBrowser((value) => !value)}><Menu size={16} /></button><div className="breadcrumb"><span>SESSIONS</span><span className="crumb-separator">/</span><strong>Night Drive</strong><span className="saved-state"><span /> Autosaved</span></div></div><div className="top-actions"><button className="icon-button" onClick={() => toast("Search is ready for instruments, clips, and commands")}><Search size={15} /></button><button className="icon-button" onClick={() => toast("Settings panel coming soon")}><Settings2 size={15} /></button><button className="user-chip" onClick={() => toast("PARKWAY operator profile")}>JM</button></div></header>
 
-        <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
+        <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : stereoStatus === "ready" ? "STEREO READY" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
+        <StereoControl master={master} status={stereoStatus} compact={compactMode} onEnable={() => void enableStereo()} onMasterChange={setMaster} onCompactToggle={() => setCompactMode((value) => { const next = !value; setShowBrowser(!next); return next; })} />
 
         <div className="content-scroll"><div className="workspace-heading"><div><div className="section-kicker"><Radio size={13} /> {activeView} / MASTER SESSION</div><h1>Master bus.<br /><em>Ready to move.</em></h1><p className="heading-copy">Transport, timing, and signal routing in one tactile performance surface.</p><div className="master-readout"><div className="readout-scope"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="readout-meta"><span>MASTER / STEREO</span><strong>{master}%</strong><small>-3.2 dB peak · 6.8 dB headroom</small></div><div className="readout-state"><span className="status-light" /> READY</div></div></div><div className="heading-tools"><button className="outline-button" onClick={() => toast("New track added to the session")}><Plus size={14} /> Add track</button><button className="solid-button" onClick={() => toast("Render queue started")}><Zap size={14} /> Render</button></div></div>
 
@@ -448,6 +504,8 @@ export default function Home() {
 
             <aside className="inspector panel"><div className="panel-header"><div><div className="section-kicker"><Gauge size={13} /> Inspector / selected track</div><h2>{selected.name}</h2></div><button className="icon-button"><ChevronDown size={14} /></button></div><div className="inspector-hero"><div className={`inspector-badge badge-${selected.color}`}><AudioWaveform size={22} /></div><div><div className="inspector-type">{selected.type.toUpperCase()} CHANNEL</div><div className="inspector-preset">{selected.preset}</div></div></div><div className="parameter"><div><span>Volume</span><strong>{selected.level}%</strong></div><input aria-label="Selected track volume" type="range" min="0" max="100" value={selected.level} onChange={(event) => updateTrack(selected.id, { level: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="parameter"><div><span>Pan</span><strong>{selected.pan > 0 ? `R ${selected.pan}` : selected.pan < 0 ? `L ${Math.abs(selected.pan)}` : "CENTER"}</strong></div><input aria-label="Selected track pan" type="range" min="-50" max="50" value={selected.pan} onChange={(event) => updateTrack(selected.id, { pan: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="plugin-stack"><div className="plugin-slot"><span>01</span><div><strong>JIG / TRANSIENT</strong><small>Active · 4.2 ms</small></div><ChevronDown size={13} /></div><div className="plugin-slot"><span>02</span><div><strong>PARKWAY SATURATOR</strong><small>Drive 18% · Air +3 dB</small></div><ChevronDown size={13} /></div><button className="add-plugin" onClick={() => toast("Plugin browser opened")}><Plus size={13} /> Add insert</button></div><div className="inspector-footer"><div><span>Peak</span><strong>-3.2 dB</strong></div><div><span>Headroom</span><strong>6.8 dB</strong></div></div></aside></div>
           {activeView === "Studio" && <MediaPreviewPlayer options={previewOptions} value={previewAsset ? `asset:${previewAsset.id}` : `track:${currentTrackId}`} label={previewLabel} detail={previewAsset ? `${previewAsset.assetType.toUpperCase()} · ${formatDuration(previewAsset.durationMs)}` : activeTrack.tag} bars={previewBars} duration={duration} currentTime={currentTime} isPlaying={isPlaying} zoom={waveformZoom} normalized={peakNormalize} onSourceChange={selectPreviewSource} onTogglePlay={() => void togglePlay()} onScrub={scrubPreview} onNudge={nudgePreview} onZoom={setWaveformZoom} onNormalize={() => setPeakNormalize((value) => !value)} />}
+          {activeView === "Assets" && <AssetFocusPanel assets={assetsQuery.data ?? []} authenticated={isAuthenticated} onOpenStudio={() => setActiveView("Studio")} />}
+          {activeView === "Contact" && <ContactPanel draft={contactDraft} setDraft={setContactDraft} pending={contactSubmit.isPending} onSubmit={() => void submitContactEnquiry()} />}
         </div></section>
     </main>
   );

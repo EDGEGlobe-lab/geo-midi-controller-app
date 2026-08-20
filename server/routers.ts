@@ -1,14 +1,24 @@
 import { z } from "zod";
 import { COOKIE_NAME } from "@shared/const";
+import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createGenerationJob, createSamplerOutput, createStudioAsset, listGenerationJobs, listSamplerOutputs, listStudioAssets, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
+import { createContactEnquiry, createGenerationJob, createSamplerOutput, createStudioAsset, getUserByOpenId, listContactEnquiries, listGenerationJobs, listSamplerOutputs, listStudioAssets, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
+import { ENV } from "./_core/env";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
 const supportedMime = /^(audio\/|video\/|image\/|application\/json$|application\/octet-stream$)/i;
+const contactEnquirySchema = z.object({
+  name: z.string().trim().min(2).max(160),
+  email: z.string().trim().email().max(320),
+  serviceInterest: z.enum(["production", "mix-master", "studio-system", "other"]),
+  message: z.string().trim().min(12).max(4000),
+  paymentDetailsRequested: z.boolean().default(false),
+  website: z.string().max(0).optional().default(""),
+}).strict();
 
 export const appRouter = router({
   system: systemRouter,
@@ -18,6 +28,25 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+  contact: router({
+    submit: publicProcedure.input(contactEnquirySchema).mutation(async ({ input }) => {
+      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      if (!owner) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Contact service is temporarily unavailable" });
+      return createContactEnquiry({
+        ownerUserId: owner.id,
+        name: input.name,
+        email: input.email,
+        serviceInterest: input.serviceInterest,
+        message: input.message,
+        paymentDetailsRequested: input.paymentDetailsRequested ? 1 : 0,
+      });
+    }),
+    inbox: protectedProcedure.query(async ({ ctx }) => {
+      const owner = await getUserByOpenId(ENV.ownerOpenId);
+      if (!owner || ctx.user.role !== "admin" || ctx.user.id !== owner.id) throw new TRPCError({ code: "FORBIDDEN", message: "Contact enquiries are limited to the project owner" });
+      return listContactEnquiries(owner.id);
     }),
   }),
   studio: router({
