@@ -1,3 +1,6 @@
+import { useAuth } from "@/_core/hooks/useAuth";
+import { startLogin } from "@/const";
+import { trpc } from "@/lib/trpc";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -51,6 +54,28 @@ const tracks: TrackBase[] = [
 type TrackState = TrackBase & { muted: boolean; solo: boolean; armed: boolean };
 const PERFORMANCE_PADS = ["KICK", "SNARE", "HAT", "CLAP", "SUB", "PLUCK", "CHORD", "PAD", "FX 01", "FX 02", "VOCAL", "RISER", "TOM", "PERC", "NOISE", "STOP"];
 const GRID_BEATS = 16;
+const studioCatalog = [
+  { kind: "MINI PC", name: "PARKWAY Nano Rack", detail: "Ultra-compact DAW host · low-latency USB-C", accent: "cyan", spec: "8C / 32 GB / NVMe" },
+  { kind: "GROOVEBOX", name: "Pulse 404 Workstation", detail: "Standalone sequencer · scene-based performance", accent: "amber", spec: "16 pads / 64 scenes" },
+  { kind: "INTERFACE", name: "Field I/O 8", detail: "Portable audio interface · clean preamps", accent: "violet", spec: "8 in / 8 out / MIDI" },
+  { kind: "PAD CONTROLLER", name: "JIG Surface 16", detail: "Pressure-sensitive performance grid", accent: "pink", spec: "16 pads / USB MIDI" },
+] as const;
+const presets = [
+  { name: "Night Drive / Hook A", group: "Arrangement preset", detail: "D major · 156 BPM · 16 bars", color: "cyan" },
+  { name: "Octal Pulse / 07", group: "Rhythm preset", detail: "Base-8 step logic · clutch quaver", color: "amber" },
+  { name: "RIJG Vocal Chain", group: "Vocal preset", detail: "Recursive phrase journal · sampler-ready", color: "pink" },
+  { name: "Serenity Motion Bed", group: "Motion preset", detail: "VGA signal rail · abstract glow", color: "violet" },
+] as const;
+const samplerSeeds = [
+  { id: "vocal-riJG", type: "VOCAL", name: "RIJG Clutch Quaver", detail: "Breathy note fragments · G-clef phrasing", duration: "00:08", format: "WAV / 48 kHz", color: "pink" },
+  { id: "sfx-octal", type: "SFX", name: "Octal Stairway Impact", detail: "Robotic transient · VGA motion hit", duration: "00:03", format: "WAV / 48 kHz", color: "amber" },
+] as const;
+const instruments = [
+  { name: "JIG Pluck Engine", type: "Virtual instrument", detail: "Bright transient hooks with scale lock", color: "cyan" },
+  { name: "Night Air Pad", type: "Virtual instrument", detail: "Wide triangle beds and harmonic haze", color: "violet" },
+  { name: "Sub Root Matrix", type: "Sound library", detail: "Controlled sub pulses in D major", color: "amber" },
+  { name: "Vocal / SFX Lab", type: "Sampler collection", detail: "Vocal chops, impacts, risers, noise", color: "pink" },
+] as const;
 
 const formatTime = (value: number) => {
   const minutes = Math.floor(value / 60).toString().padStart(2, "0");
@@ -71,7 +96,15 @@ function Waveform({ color = "cyan", seed = 1, active = false }: { color?: string
 }
 
 export default function Home() {
+  // The useAuth hook provides authentication state.
+  // To implement login/logout, call logout(), or start login from an event
+  // handler: onClick={() => startLogin()} (imported from "@/const"). Never call
+  // startLogin() during render (no href={startLogin()}) — it mints a one-time
+  // nonce cookie and must run only at the moment of navigation.
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const assetInputRef = useRef<HTMLInputElement | null>(null);
   const timelineRef = useRef<HTMLDivElement | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
@@ -104,7 +137,14 @@ export default function Home() {
   const [eqBands, setEqBands] = useState<number[]>([0.06, 0.08, 0.1, 0.08, 0.06, 0.05, 0.04, 0.03]);
   const [trackedVisits, setTrackedVisits] = useState(0);
   const [generateOnTrackedVisit, setGenerateOnTrackedVisit] = useState(() => window.localStorage.getItem("parkway-generate-on-tracked-visit") === "true");
+  const [assetType, setAssetType] = useState<"audio" | "vocal" | "sfx" | "sample" | "motion" | "image" | "other">("audio");
+  const [uploadingAsset, setUploadingAsset] = useState(false);
+  const [generationState, setGenerationState] = useState<"idle" | "awaiting-approval" | "running" | "completed">("idle");
+  const [samplerLaneState, setSamplerLaneState] = useState<Record<string, "ready" | "queued" | "complete">>(() => Object.fromEntries(samplerSeeds.map((item) => [item.id, "ready"])));
   const activeTrack = AUDIO_TRACKS.find((track) => track.id === currentTrackId) ?? AUDIO_TRACKS[0];
+  const projectKey = "night-drive-07";
+  const assetsQuery = trpc.studio.assets.list.useQuery({ projectKey }, { enabled: isAuthenticated });
+  const uploadAsset = trpc.studio.assets.upload.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Asset stored in the cloud project library"); }, onError: (error) => toast.error(error.message) });
   const selected = tracksState.find((track) => track.id === selectedTrack) ?? tracksState[0];
   const activeCount = tracksState.filter((track) => !track.muted).length;
   const soloActive = tracksState.some((track) => track.solo);
@@ -252,6 +292,23 @@ export default function Home() {
     if (node && typeof update.pan === "number") node.pan.pan.value = update.pan / 50;
   };
   const setTrackedVisitPreference = (value: boolean) => { setGenerateOnTrackedVisit(value); window.localStorage.setItem("parkway-generate-on-tracked-visit", String(value)); toast(value ? "Autonomous audio generation armed for tracked visits" : "Tracked-visit generation paused"); };
+  const triggerSamplerLane = (id: string) => { setSamplerLaneState((items) => ({ ...items, [id]: "queued" })); window.setTimeout(() => setSamplerLaneState((items) => ({ ...items, [id]: "complete" })), 900); };
+  const startGeneration = () => {
+    if (generationState === "idle" || generationState === "completed") { setGenerationState("awaiting-approval"); return; }
+    if (generationState === "awaiting-approval") { setGenerationState("running"); window.setTimeout(() => setGenerationState("completed"), 1400); }
+  };
+  const handleAssetPick = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file) return;
+    if (!isAuthenticated) { toast("Sign in to store assets in your cloud project"); startLogin(); return; }
+    if (file.size > 30 * 1024 * 1024) { toast.error("Assets must be 30 MB or smaller"); return; }
+    setUploadingAsset(true);
+    try {
+      const dataBase64 = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1] ?? ""); reader.onerror = () => reject(new Error("Could not read the file")); reader.readAsDataURL(file); });
+      await uploadAsset.mutateAsync({ projectKey, filename: file.name, mimeType: file.type || "application/octet-stream", assetType, dataBase64 });
+    } finally { setUploadingAsset(false); }
+  };
   const playPad = (index: number) => {
     setPressedPads((items) => Array.from(new Set([...items, index])));
     window.setTimeout(() => setPressedPads((items) => items.filter((item) => item !== index)), 140);
@@ -274,7 +331,7 @@ export default function Home() {
         {showBrowser && <>
           <div className="side-label">Workspace</div>
           <nav className="side-nav">
-            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
+            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
           </nav>
           <div className="side-label">Project</div>
           <div className="project-card"><div className="project-orbit"><Disc3 size={18} /></div><div className="min-w-0"><div className="project-title">Night Drive / 07</div><div className="project-meta">D major · 156 BPM</div></div><ChevronDown size={14} className="text-muted" /></div>
@@ -291,6 +348,8 @@ export default function Home() {
         <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
 
         <div className="content-scroll"><div className="workspace-heading"><div><div className="section-kicker"><Radio size={13} /> {activeView} / MASTER SESSION</div><h1>Master bus.<br /><em>Ready to move.</em></h1><p className="heading-copy">Transport, timing, and signal routing in one tactile performance surface.</p><div className="master-readout"><div className="readout-scope"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="readout-meta"><span>MASTER / STEREO</span><strong>{master}%</strong><small>-3.2 dB peak · 6.8 dB headroom</small></div><div className="readout-state"><span className="status-light" /> READY</div></div></div><div className="heading-tools"><button className="outline-button" onClick={() => toast("New track added to the session")}><Plus size={14} /> Add track</button><button className="solid-button" onClick={() => toast("Render queue started")}><Zap size={14} /> Render</button></div></div>
+
+          {activeView === "Studio" && <section className="studio-panel panel"><div className="panel-header"><div><div className="section-kicker"><Sparkles size={13} /> Music Studio Production / cloud workspace</div><h2>Studio systems <span className="muted-slash">/</span> <span>Night Drive / 07</span></h2></div><div className="panel-header-actions"><span className="small-pill"><span className="status-light" /> {isAuthenticated ? "PRIVATE WORKSPACE" : "SIGN IN TO STORE"}</span></div></div><div className="studio-intro"><div><strong>Assemble the rig.</strong><span>Mini PCs, standalone grooveboxes, instruments, interfaces, and the assets that make a session move.</span></div><button className="solid-button" onClick={startGeneration}><Zap size={14} /> {generationState === "idle" ? "Prepare generation" : generationState === "awaiting-approval" ? "Approve & generate" : generationState === "running" ? "Generating…" : "Generated source ready"}</button></div><div className="catalog-grid">{studioCatalog.map((item) => <button key={item.name} className={`catalog-card catalog-${item.accent}`} onClick={() => toast(`${item.name} added to the studio shortlist`)}><span>{item.kind}</span><strong>{item.name}</strong><small>{item.detail}</small><em>{item.spec}</em></button>)}</div>{generationState !== "idle" && <div className={`generation-status generation-${generationState}`}><span className="status-light" /><strong>{generationState === "awaiting-approval" ? "Approval required before autonomous generation" : generationState === "running" ? "Manus AI is assembling a sampler-ready source" : "Autonomous source complete · available in the audio browser"}</strong><small>{generationState === "completed" ? "Autonomous Manus AI Audio · 60 sec · D major · 156 BPM" : "No background generation occurs without this visible user action."}</small></div>}<div className="preset-strip"><div className="studio-subhead"><div><span className="section-kicker"><Settings2 size={13} /> Preset browser</span><h3>Jig chains & motion studies</h3></div></div><div className="preset-grid">{presets.map((preset) => <button key={preset.name} className={`preset-card preset-${preset.color}`} onClick={() => toast(`${preset.name} loaded into the active project`) }><strong>{preset.name}</strong><small>{preset.group}</small><em>{preset.detail}</em></button>)}</div></div><div className="studio-columns"><div><div className="studio-subhead"><div><span className="section-kicker"><AudioWaveform size={13} /> Instruments & sound library</span><h3>Playable source material</h3></div><button className="outline-button outline-small" onClick={() => toast("Instrument browser is ready for expansion")}><Plus size={13} /> Add source</button></div><div className="instrument-list">{instruments.map((item) => <button key={item.name} className={`instrument-card instrument-${item.color}`} onClick={() => toast(`${item.name} loaded into the active source slot`)}><span className="instrument-led" /><div><strong>{item.name}</strong><small>{item.type} · {item.detail}</small></div><ChevronDown size={13} /></button>)}</div></div><div><div className="studio-subhead"><div><span className="section-kicker"><FolderOpen size={13} /> Project assets / S3-backed</span><h3>Vocals, SFX, samples & motion</h3></div><div className="asset-upload-tools"><select aria-label="Asset type" value={assetType} onChange={(event) => setAssetType(event.target.value as typeof assetType)}><option value="audio">Audio</option><option value="vocal">Vocal</option><option value="sfx">SFX</option><option value="sample">Sample</option><option value="motion">Motion</option><option value="image">Image</option></select><input ref={assetInputRef} type="file" className="sr-only" onChange={handleAssetPick} accept="audio/*,video/*,image/*,.json" /><button className="outline-button outline-small" onClick={() => assetInputRef.current?.click()} disabled={uploadingAsset}>{uploadingAsset ? "Uploading…" : "Upload asset"}</button></div></div><div className="sampler-lanes">{samplerSeeds.map((item) => <div key={item.id} className={`sampler-card sampler-${item.color}`}><div className="sampler-card-top"><span className="asset-kind">{item.type}</span><span className="sampler-state">{samplerLaneState[item.id] === "queued" ? "GENERATING" : samplerLaneState[item.id] === "complete" ? "READY" : "PREVIEW"}</span></div><strong>{item.name}</strong><small>{item.detail}</small><div className="sampler-meta"><span>{item.duration}</span><span>{item.format}</span></div><div className="sampler-actions"><button className="outline-button outline-small" onClick={() => triggerSamplerLane(item.id)}>{samplerLaneState[item.id] === "queued" ? "Generating…" : "Generate lane"}</button><button className="text-button" onClick={() => toast(`${item.name} loaded into the sampler lane`)}>Load to project</button></div></div>)}</div><div className="asset-list">{assetsQuery.data?.length ? assetsQuery.data.map((asset) => <a key={asset.id} className="asset-row" href={`/manus-storage/${asset.storageKey}`} target="_blank" rel="noreferrer"><span className="asset-kind">{asset.assetType}</span><strong>{asset.filename}</strong><small>{Math.round(asset.sizeBytes / 1024)} KB · {asset.mimeType}</small></a>) : <div className="asset-empty"><Volume2 size={16} /><span>{isAuthenticated ? "No project assets yet. Upload a vocal, SFX pass, sample, or motion reference." : "Sign in to create a private cloud asset library."}</span>{!isAuthenticated && <button className="outline-button outline-small" onClick={startLogin}>Sign in</button>}</div>}</div></div></div></section>}
 
           {activeView === "Performance" && <section className="performance-panel panel"><div className="panel-header"><div><div className="section-kicker"><Zap size={13} /> Performance / hardware pads</div><h2>Jig pad bank <span className="muted-slash">/</span> <span>{midiStatus}</span></h2></div><div className="panel-header-actions"><span className="small-pill"><span className="status-light" /> {midiInputs.length ? midiInputs[0] : "Browser MIDI"}</span></div></div><div className="performance-body"><div className="pad-grid">{PERFORMANCE_PADS.map((pad, index) => <button key={pad} className={`performance-pad pad-${index % 6} ${pressedPads.includes(index) ? "is-pressed" : ""}`} onPointerDown={() => playPad(index)} onClick={() => setMidiMap((mapping) => ({ ...mapping, [36 + index]: index }))}><span>{String(index + 1).padStart(2, "0")}</span><strong>{pad}</strong><small>{midiMap[36 + index] === index ? "MAPPED" : `NOTE ${36 + index}`}</small></button>)}</div><div className="performance-side"><div className="performance-readout"><span className="transport-caption">MIDI ROUTING</span><strong>{midiInputs.length ? "LIVE INPUT" : "CLICK TO PLAY"}</strong><small>Click a pad to map note {36 + (pressedPads[0] ?? 0)}. External MIDI notes light the same pad.</small></div><button className="outline-button" onClick={() => toast(midiInputs.length ? `${midiInputs.length} MIDI input${midiInputs.length > 1 ? "s" : ""} listening` : "Connect a MIDI controller to enable hardware input")}><Headphones size={14} /> Check hardware</button></div></div></section>}
 

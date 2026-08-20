@@ -10,4 +10,17 @@
 - [x] Add the generated Autonomous Manus AI Audio source and an in-app tracked-visit preference toggle.
 - [x] Verify responsive behavior, keyboard access, audio unlock flow, and build output.
 - [ ] If silent regeneration on every tracked visit is required, add a user-approved backend event route or scheduled automation layer; the current frontend safely arms the generated source without initiating hidden background generation.
-- [ ] Save a checkpoint and deliver the upgraded project.
+- [x] Save a checkpoint and deliver the upgraded project.
+
+## Music Studio Production Platform Expansion
+
+- [x] Assess whether the current static project should be upgraded to full-stack cloud asset storage and user-owned workspace support.
+- [x] Add compact DAW mini-PC, groovebox, workstation, portable interface, and pad-controller catalog sections.
+- [x] Add virtual instrument, preset, and sound-library browsing structures.
+- [x] Add local DAW project asset ingestion for vocals, sound effects, samples, and motion-graphics files.
+- [x] Add project asset metadata, file type validation, and storage status UI.
+- [x] Add autonomous generative audio workflow with explicit approval and visible generation state.
+- [x] Add vocal and sound-effects generation lanes plus sampler-ready asset cards.
+- [ ] Add concept-level Ableton Live controller integration and clearly label external-runtime requirements.
+- [ ] Translate the user’s VGA / OTcl / octal / RIJG / cryptographic-math / G-clef / quaver / cybernetic brief into a coherent visual and audio design system without presenting malformed strings as factual technical standards.
+- [x] Validate the cloud studio experience and save a delivery checkpoint.
