@@ -24,3 +24,15 @@
 - [x] Add concept-level Ableton Live controller integration and clearly label external-runtime requirements.
 - [x] Translate the user’s VGA / OTcl / octal / RIJG / cryptographic-math / G-clef / quaver / cybernetic brief into a coherent visual and audio design system without presenting malformed strings as factual technical standards.
 - [x] Validate the cloud studio experience and save a delivery checkpoint.
+
+## Media Metadata and Generation Jobs
+
+- [x] Add durable media metadata fields for duration, waveform preview data, and user-owned tags.
+- [x] Add generation job and sampler output tables with owner/project scoping and lifecycle states.
+- [x] Add protected procedures to create, update, list, and complete generation jobs and sampler outputs.
+- [x] Extract duration and waveform preview data from uploaded audio/video files in the browser.
+- [x] Add tag editing and tag filtering for uploaded media assets.
+- [x] Render waveform previews and duration metadata on asset and sampler cards.
+- [x] Apply HETG/CIAO and neon NGT/ANNGT constellation styling as a clearly labeled abstract metadata treatment.
+- [x] Add Vitest coverage for generation-job authorization and state transitions.
+- [x] Verify typecheck, tests, build, responsive UI, and save a final checkpoint.

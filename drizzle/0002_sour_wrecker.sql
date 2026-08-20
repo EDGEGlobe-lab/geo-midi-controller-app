@@ -1,0 +1,1 @@
+ALTER TABLE `sampler_outputs` ADD `waveformPreview` text;

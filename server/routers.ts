@@ -3,7 +3,7 @@ import { COOKIE_NAME } from "@shared/const";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { createStudioAsset, listStudioAssets } from "./db";
+import { createGenerationJob, createSamplerOutput, createStudioAsset, listGenerationJobs, listSamplerOutputs, listStudioAssets, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
@@ -28,6 +28,7 @@ export const appRouter = router({
       list: protectedProcedure
         .input(z.object({ projectKey: z.string().min(1).max(120) }))
         .query(({ ctx, input }) => listStudioAssets(ctx.user.id, input.projectKey)),
+      updateTags: protectedProcedure.input(z.object({ assetId: z.number().int().positive(), tags: z.array(z.string().min(1).max(40)).max(24) })).mutation(({ ctx, input }) => updateStudioAssetTags(ctx.user.id, input.assetId, input.tags)),
       upload: protectedProcedure
         .input(z.object({
           projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/),
@@ -35,6 +36,9 @@ export const appRouter = router({
           mimeType: z.string().min(1).max(160),
           assetType: assetTypeSchema,
           dataBase64: z.string().min(1),
+          durationMs: z.number().int().nonnegative().max(86_400_000).nullable().optional(),
+          waveformPreview: z.string().max(20_000).nullable().optional(),
+          tags: z.array(z.string().min(1).max(40)).max(24).default([]),
         }))
         .mutation(async ({ ctx, input }) => {
           const data = Buffer.from(input.dataBase64, "base64");
@@ -50,8 +54,21 @@ export const appRouter = router({
             mimeType: input.mimeType,
             assetType: input.assetType,
             sizeBytes: data.byteLength,
+            durationMs: input.durationMs ?? null,
+            waveformPreview: input.waveformPreview ?? null,
+            tags: JSON.stringify(input.tags),
           });
         }),
+    }),
+    jobs: router({
+      list: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120) })).query(({ ctx, input }) => listGenerationJobs(ctx.user.id, input.projectKey)),
+      create: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120), jobType: z.enum(["music", "vocal", "sfx", "motion"]), prompt: z.string().min(1).max(2000) })).mutation(({ ctx, input }) => createGenerationJob({ userId: ctx.user.id, projectKey: input.projectKey, jobType: input.jobType, prompt: input.prompt, status: "queued" })),
+      transition: protectedProcedure.input(z.object({ jobId: z.number().int().positive(), status: z.enum(["queued", "running", "completed", "failed", "cancelled"]), errorMessage: z.string().max(1000).optional() })).mutation(({ ctx, input }) => updateGenerationJob(ctx.user.id, input.jobId, input.status, input.errorMessage)),
+    }),
+    sampler: router({
+      list: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120) })).query(({ ctx, input }) => listSamplerOutputs(ctx.user.id, input.projectKey)),
+      create: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120), generationJobId: z.number().int().positive().nullable().optional(), assetId: z.number().int().positive().nullable().optional(), outputType: z.enum(["music", "vocal", "sfx", "motion"]), name: z.string().min(1).max(255), durationMs: z.number().int().nonnegative().nullable().optional(), waveformPreview: z.string().max(20_000).nullable().optional(), tags: z.array(z.string().min(1).max(40)).max(24).default([]) })).mutation(({ ctx, input }) => createSamplerOutput({ userId: ctx.user.id, projectKey: input.projectKey, generationJobId: input.generationJobId ?? null, assetId: input.assetId ?? null, outputType: input.outputType, name: input.name, durationMs: input.durationMs ?? null, waveformPreview: input.waveformPreview ?? null, tags: JSON.stringify(input.tags) })),
+      update: protectedProcedure.input(z.object({ outputId: z.number().int().positive(), tags: z.array(z.string().min(1).max(40)).max(24).optional(), waveformPreview: z.string().max(20_000).nullable().optional() })).mutation(({ ctx, input }) => updateSamplerOutput(ctx.user.id, input.outputId, input.tags, input.waveformPreview)),
     }),
   }),
 });
