@@ -4,11 +4,12 @@ import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { activateHardwareRegistration, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, deleteAudioSource, getHardwareRegistration, getUserByOpenId, listAudioSourceHistory, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listStudioAssets, restoreAudioSource, revokeHardwareRegistration, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
+import { activateHardwareRegistration, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, deleteAudioSource, getHardwareRegistration, getUserByOpenId, listAudioSourceHistory, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listSavedRadioStations, listStudioAssets, removeSavedRadioStation, restoreAudioSource, revokeHardwareRegistration, saveRadioStation, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
 import { fallbackAssetTags, NIGHT_DRIVE_FALLBACK_DURATION_MS, NIGHT_DRIVE_FALLBACK_MIME_TYPE, NIGHT_DRIVE_FALLBACK_STORAGE_KEY, selectNightDriveGenre } from "../shared/aiProjectFallback";
+import { getParkwayRadioStation } from "../shared/radioStationCatalog";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
@@ -81,6 +82,17 @@ export const appRouter = router({
       if (!registration) throw new TRPCError({ code: "NOT_FOUND", message: "Registered device not found" });
       if (!canRevokeSoundAccess(registration.ownerUserId, ctx.user.id, registration.activationState)) throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Only an active owner-scoped sound-access profile can be revoked" });
       return revokeHardwareRegistration(ctx.user.id, registration.id, { registrationId: registration.id, ownerUserId: ctx.user.id, event: "revoked", noticeVersion: registration.consentNoticeVersion ?? SOUND_ACCESS_NOTICE_VERSION, purpose: hardwarePurpose });
+    }),
+  }),
+  radio: router({
+    saved: protectedProcedure.query(({ ctx }) => listSavedRadioStations(ctx.user.id)),
+    save: protectedProcedure.input(z.object({ stationId: z.string().min(1).max(80) }).strict()).mutation(async ({ ctx, input }) => {
+      if (!getParkwayRadioStation(input.stationId)) throw new TRPCError({ code: "NOT_FOUND", message: "PARKWAY project-preview station not found" });
+      return saveRadioStation(ctx.user.id, input.stationId);
+    }),
+    remove: protectedProcedure.input(z.object({ stationId: z.string().min(1).max(80) }).strict()).mutation(async ({ ctx, input }) => {
+      if (!getParkwayRadioStation(input.stationId)) throw new TRPCError({ code: "NOT_FOUND", message: "PARKWAY project-preview station not found" });
+      return removeSavedRadioStation(ctx.user.id, input.stationId);
     }),
   }),
   studio: router({

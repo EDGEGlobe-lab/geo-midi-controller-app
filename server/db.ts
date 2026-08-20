@@ -93,7 +93,7 @@ export async function getUserByOpenId(openId: string) {
 
 
 import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry, InsertHardwareRegistration, InsertHardwareConsentEvent } from "../drizzle/schema";
-import { activeAudioSources, audioSourceEvents, contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, studioAssets } from "../drizzle/schema";
+import { activeAudioSources, audioSourceEvents, contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, savedRadioStations, studioAssets } from "../drizzle/schema";
 
 export async function createStudioAsset(asset: InsertStudioAsset) {
   const db = await getDb();
@@ -141,6 +141,27 @@ export async function deleteAudioSource(ownerUserId: number, projectKey: string,
   await db.update(studioAssets).set({ deletedAt: now }).where(and(eq(studioAssets.id, assetId), eq(studioAssets.userId, ownerUserId), eq(studioAssets.projectKey, projectKey)));
   await db.insert(audioSourceEvents).values({ ownerUserId, projectKey, assetId, event: "deleted", createdAt: now });
   return { status: "deleted" as const, assetId, deletedAt: now };
+}
+
+export async function listSavedRadioStations(ownerUserId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db.select().from(savedRadioStations).where(eq(savedRadioStations.ownerUserId, ownerUserId));
+}
+
+export async function saveRadioStation(ownerUserId: number, stationId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Saved stations are temporarily unavailable");
+  const now = new Date();
+  await db.insert(savedRadioStations).values({ ownerUserId, stationId, createdAt: now }).onDuplicateKeyUpdate({ set: { stationId } });
+  return { ownerUserId, stationId, savedAt: now };
+}
+
+export async function removeSavedRadioStation(ownerUserId: number, stationId: string) {
+  const db = await getDb();
+  if (!db) throw new Error("Saved stations are temporarily unavailable");
+  await db.delete(savedRadioStations).where(and(eq(savedRadioStations.ownerUserId, ownerUserId), eq(savedRadioStations.stationId, stationId)));
+  return { ownerUserId, stationId, removed: true };
 }
 
 export async function updateStudioAssetTags(userId: number, assetId: number, tags: string[]) {

@@ -140,3 +140,19 @@
 - [x] Update and validate the reusable PARKWAY cloud music-studio skill with source history and version lifecycle guidance.
 - [x] Verify desktop/mobile UI, typecheck, 31 Vitest assertions, and production build.
 - [x] Publish and deliver the source-history update and its reusable skill package.
+
+## PARKWAY Radio Streaming Workspace
+
+- [x] Define lawful radio-stream source, metadata, licensing, and browser-playback boundaries without representing third-party services or live broadcasts as PARKWAY-controlled.
+- [x] Add an original station catalogue with playable project-owned preview sources, genres, current-program metadata, and disclosure labels.
+- [x] Add an accessible radio player with play/pause, station switching, volume, now-playing state, and browser user-gesture audio unlock.
+- [x] Add owner-scoped saved-station procedures and UI controls, with authorization tests and no client-side credentials.
+- [x] Verify desktop/mobile radio discovery, playback controls, typecheck, 34 Vitest assertions, production build, and responsive visual review.
+- [ ] Publish the PARKWAY radio workspace and request real-browser audio confirmation.
+
+## Cross-Device and Ethical Radio Compatibility
+
+- [x] Document browser-based support boundaries for iPhone, iPad, macOS, Windows, Android, Linux, and Chromium-family devices without making unsupported hardware guarantees.
+- [x] Add responsive touch, keyboard, screen-reader, reduced-motion, and visible-focus safeguards to the radio workspace.
+- [x] Add a clear code-of-conduct and privacy boundary: no hidden listener telemetry, discriminatory content targeting, client credentials, or third-party service impersonation.
+- [x] Verify radio layouts on desktop and mobile viewports alongside browser-audio user-gesture requirements; tablet reflow uses the responsive 900px layout breakpoint.

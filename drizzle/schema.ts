@@ -67,6 +67,16 @@ export const audioSourceEvents = mysqlTable("audio_source_events", {
 export type AudioSourceEvent = typeof audioSourceEvents.$inferSelect;
 export type InsertAudioSourceEvent = typeof audioSourceEvents.$inferInsert;
 
+export const savedRadioStations = mysqlTable("saved_radio_stations", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id),
+  stationId: varchar("stationId", { length: 80 }).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+}, (table) => ({ ownerStationUnique: uniqueIndex("saved_radio_owner_station_uq").on(table.ownerUserId, table.stationId) }));
+
+export type SavedRadioStation = typeof savedRadioStations.$inferSelect;
+export type InsertSavedRadioStation = typeof savedRadioStations.$inferInsert;
+
 export const generationJobs = mysqlTable("generation_jobs", {
   id: int("id").autoincrement().primaryKey(),
   userId: int("userId").notNull().references(() => users.id),
