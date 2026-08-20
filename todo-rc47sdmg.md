@@ -139,4 +139,4 @@
 - [x] Add Vitest coverage for owner scope, active-source delete protection, restoration, and lifecycle state changes.
 - [x] Update and validate the reusable PARKWAY cloud music-studio skill with source history and version lifecycle guidance.
 - [x] Verify desktop/mobile UI, typecheck, 31 Vitest assertions, and production build.
-- [ ] Publish and deliver the source-history update and its reusable skill package.
+- [x] Publish and deliver the source-history update and its reusable skill package.
