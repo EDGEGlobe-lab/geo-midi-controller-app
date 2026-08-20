@@ -101,6 +101,17 @@ function Waveform({ color = "cyan", seed = 1, active = false }: { color?: string
   return <div className={`waveform waveform-${color} ${active ? "waveform-active" : ""}`}>{Array.from({ length: 64 }).map((_, index) => <span key={index} style={{ height: `${18 + ((index * 17 + seed * 13) % 76)}%` }} />)}</div>;
 }
 
+type CommerceProduct = { id: "asset-starter" | "cloud-membership"; name: string; description: string; mode: "payment" | "subscription"; unitAmount: number };
+function CommercePanel({ products, loading, pending, onCheckout }: { products?: CommerceProduct[]; loading: boolean; pending: boolean; onCheckout: (productId: CommerceProduct["id"]) => void }) {
+  return <section className="checkout-panel panel"><div className="panel-header"><div><div className="section-kicker"><Sparkles size={13} /> PARKWAY commerce / Stripe Checkout</div><h2>Studio access <span className="muted-slash">/</span> <span>purchase or subscribe</span></h2></div><span className="small-pill"><span className="status-light" /> TEST MODE</span></div><p className="checkout-copy">Choose a one-time studio product or recurring service plan. Payments are completed in Stripe-hosted Checkout.</p><div className="checkout-products">{products?.map((product) => <article key={product.id} className={`checkout-card checkout-${product.mode}`}><span>{product.mode === "subscription" ? "MONTHLY SERVICE" : "ONE-TIME PRODUCT"}</span><strong>{product.name}</strong><small>{product.description}</small><div className="checkout-price"><b>${(product.unitAmount / 100).toFixed(2)}</b><em>{product.mode === "subscription" ? " / month" : " one time"}</em></div><button className="solid-button" disabled={pending} onClick={() => onCheckout(product.id)}>{pending ? "Opening checkout…" : product.mode === "subscription" ? "Subscribe" : "Purchase"}</button></article>) ?? <div className="asset-empty">{loading ? "Loading Stripe product catalog…" : "Stripe catalog unavailable"}</div>}</div><small className="checkout-note">Claim the Stripe test environment in Settings → Payment before testing with a test card.</small></section>;
+}
+
+type PreviewOption = { value: string; label: string; detail: string };
+function MediaPreviewPlayer({ options, value, label, detail, bars, duration, currentTime, isPlaying, zoom, normalized, onSourceChange, onTogglePlay, onScrub, onNudge, onZoom, onNormalize }: { options: PreviewOption[]; value: string; label: string; detail: string; bars: number[]; duration: number; currentTime: number; isPlaying: boolean; zoom: number; normalized: boolean; onSourceChange: (value: string) => void; onTogglePlay: () => void; onScrub: (event: React.PointerEvent<HTMLDivElement>) => void; onNudge: (seconds: number) => void; onZoom: (zoom: number) => void; onNormalize: () => void }) {
+  const progress = duration > 0 ? Math.min(100, (currentTime / duration) * 100) : 0;
+  return <section className="media-preview-panel panel"><div className="panel-header"><div><div className="section-kicker"><Waves size={13} /> Media preview / local Web Audio</div><h2>{label} <span className="muted-slash">/</span> <span>{detail}</span></h2></div><span className="small-pill">{normalized ? "PEAK SAFE" : "RAW PREVIEW"}</span></div><div className="preview-toolbar"><select aria-label="Preview source" value={value} onChange={(event) => onSourceChange(event.target.value)}>{options.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}</select><button className="outline-button outline-small" onClick={() => onZoom(Math.max(1, zoom - 1))}>− Zoom</button><span className="zoom-readout">{zoom}× GRID</span><button className="outline-button outline-small" onClick={() => onZoom(Math.min(4, zoom + 1))}>+ Zoom</button><button className={`normalize-button ${normalized ? "is-on" : ""}`} onClick={onNormalize}>Peak normalize {normalized ? "ON" : "OFF"}</button></div><div className="preview-wave-scroll"><div className="preview-waveform" role="slider" tabIndex={0} aria-label={`Scrub ${label}; ${formatTime(currentTime)} of ${formatTime(duration)}`} aria-valuemin={0} aria-valuemax={Math.round(duration)} aria-valuenow={Math.round(currentTime)} onPointerDown={onScrub} onKeyDown={(event) => { if (event.key === "ArrowLeft") { event.preventDefault(); onNudge(-5); } if (event.key === "ArrowRight") { event.preventDefault(); onNudge(5); } if (event.key === "Home") { event.preventDefault(); onNudge(-duration); } if (event.key === "End") { event.preventDefault(); onNudge(duration); } }}>{bars.map((bar, index) => <i key={index} style={{ height: `${Math.max(9, bar)}%` }} />)}<span className="preview-playhead" style={{ left: `${progress}%` }} /></div></div><div className="preview-footer"><button className="transport-play" onClick={onTogglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className="text-button" onClick={() => onNudge(-5)}>−5 s</button><span>{formatTime(currentTime)} / {formatTime(duration)}</span><button className="text-button" onClick={() => onNudge(5)}>+5 s</button><small>Passcode grid / pattern-net visual mode · original UI motif</small></div></section>;
+}
+
 export default function Home() {
   // The useAuth hook provides authentication state.
   // To implement login/logout, call logout(), or start login from an event
@@ -117,6 +128,7 @@ export default function Home() {
   const masterGainRef = useRef<GainNode | null>(null);
   const previewGainRef = useRef<GainNode | null>(null);
   const previewPanRef = useRef<StereoPannerNode | null>(null);
+  const normalizerRef = useRef<DynamicsCompressorNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const analysisFrameRef = useRef<number | null>(null);
   const trackNodesRef = useRef<Record<string, { gain: GainNode; pan: StereoPannerNode }>>({});
@@ -149,6 +161,9 @@ export default function Home() {
   const [samplerLaneState, setSamplerLaneState] = useState<Record<string, "ready" | "queued" | "complete">>(() => Object.fromEntries(samplerSeeds.map((item) => [item.id, "ready"])));
   const [assetTags, setAssetTags] = useState("night-drive, neon-pink");
   const [assetFilterTag, setAssetFilterTag] = useState("all");
+  const [previewAssetId, setPreviewAssetId] = useState<number | null>(null);
+  const [waveformZoom, setWaveformZoom] = useState(1);
+  const [peakNormalize, setPeakNormalize] = useState(false);
   const activeTrack = AUDIO_TRACKS.find((track) => track.id === currentTrackId) ?? AUDIO_TRACKS[0];
   const projectKey = "night-drive-07";
   const assetsQuery = trpc.studio.assets.list.useQuery({ projectKey }, { enabled: isAuthenticated });
@@ -160,9 +175,23 @@ export default function Home() {
   const createJob = trpc.studio.jobs.create.useMutation();
   const transitionJob = trpc.studio.jobs.transition.useMutation();
   const createSamplerOutput = trpc.studio.sampler.create.useMutation();
+  const billingCatalog = trpc.billing.catalog.useQuery();
+  const stripeCheckout = trpc.billing.checkout.useMutation();
   const selected = tracksState.find((track) => track.id === selectedTrack) ?? tracksState[0];
   const activeCount = tracksState.filter((track) => !track.muted).length;
   const soloActive = tracksState.some((track) => track.solo);
+  const previewAsset = (assetsQuery.data ?? []).find((asset) => asset.id === previewAssetId && asset.mimeType.startsWith("audio/"));
+  const previewSource = previewAsset ? `/manus-storage/${previewAsset.storageKey}` : activeTrack.src;
+  const previewLabel = previewAsset ? previewAsset.filename : activeTrack.label;
+  const previewBars = useMemo(() => {
+    const bars = previewAsset ? parseWaveform(previewAsset.waveformPreview) : makeFallbackWaveform(new TextEncoder().encode(activeTrack.label), 64);
+    const source = bars.length ? bars : makeFallbackWaveform(new TextEncoder().encode(previewLabel), 64);
+    return Array.from({ length: source.length * waveformZoom }, (_, index) => source[Math.floor(index / waveformZoom)] ?? 12);
+  }, [previewAsset, activeTrack.label, previewLabel, waveformZoom]);
+  const previewOptions = useMemo(() => [
+    ...AUDIO_TRACKS.map((track) => ({ value: `track:${track.id}`, label: track.label, detail: track.tag })),
+    ...(assetsQuery.data ?? []).filter((asset) => asset.mimeType.startsWith("audio/")).map((asset) => ({ value: `asset:${asset.id}`, label: asset.filename, detail: `${formatDuration(asset.durationMs)} · ${asset.assetType.toUpperCase()}` })),
+  ], [assetsQuery.data]);
 
   useEffect(() => {
     if (!isPlaying) return;
@@ -176,6 +205,12 @@ export default function Home() {
     window.localStorage.setItem(key, String(next));
     setTrackedVisits(next);
     if (generateOnTrackedVisit) toast("Tracked visit detected · autonomous audio source is ready");
+  }, []);
+
+  useEffect(() => {
+    const checkoutState = new URLSearchParams(window.location.search).get("checkout");
+    if (checkoutState === "success") toast.success("Payment complete. Your PARKWAY purchase has been confirmed by Stripe Checkout.");
+    if (checkoutState === "cancelled") toast("Checkout cancelled. No payment was taken.");
   }, []);
 
   useEffect(() => {
@@ -205,13 +240,23 @@ export default function Home() {
       const context = new AudioContextCtor();
       const source = context.createMediaElementSource(audioRef.current);
       const analyser = context.createAnalyser();
+      const normalizer = context.createDynamicsCompressor();
+      const previewGain = context.createGain();
       const masterGain = context.createGain();
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.78;
       masterGain.gain.value = master / 100;
-      analyser.connect(masterGain).connect(context.destination);
+      normalizer.threshold.value = 0;
+      normalizer.knee.value = 0;
+      normalizer.ratio.value = 1;
+      normalizer.attack.value = 0.003;
+      normalizer.release.value = 0.12;
+      previewGain.gain.value = 1;
+      analyser.connect(normalizer).connect(previewGain).connect(masterGain).connect(context.destination);
       sourceNodeRef.current = source;
       analyserRef.current = analyser;
+      normalizerRef.current = normalizer;
+      previewGainRef.current = previewGain;
       masterGainRef.current = masterGain;
       audioContextRef.current = context;
       tracksState.forEach((track) => {
@@ -252,6 +297,13 @@ export default function Home() {
   }, [master]);
 
   useEffect(() => {
+    const normalizer = normalizerRef.current;
+    if (!normalizer) return;
+    normalizer.threshold.value = peakNormalize ? -3 : 0;
+    normalizer.ratio.value = peakNormalize ? 12 : 1;
+  }, [peakNormalize]);
+
+  useEffect(() => {
     if (!isPlaying || !analyserRef.current) return;
     const analyser = analyserRef.current;
     const frequencyData = new Uint8Array(analyser.frequencyBinCount);
@@ -281,7 +333,7 @@ export default function Home() {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [currentTrackId]);
+  }, [currentTrackId, previewAssetId]);
 
   const togglePlay = async () => {
     if (!audioRef.current) return;
@@ -302,6 +354,36 @@ export default function Home() {
     audioRef.current.pause();
     audioRef.current.currentTime = 0;
     setCurrentTime(0); setIsPlaying(false); setActiveBar(1);
+  };
+
+  const scrubPreview = (event: React.PointerEvent<HTMLDivElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const nextTime = duration * Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width));
+    if (audioRef.current) audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  };
+  const nudgePreview = (seconds: number) => {
+    if (!audioRef.current) return;
+    const nextTime = Math.max(0, Math.min(duration, audioRef.current.currentTime + seconds));
+    audioRef.current.currentTime = nextTime;
+    setCurrentTime(nextTime);
+  };
+
+  const startCheckout = async (productId: "asset-starter" | "cloud-membership") => {
+    if (!isAuthenticated) { toast("Sign in before starting secure checkout"); startLogin(); return; }
+    try {
+      const { url } = await stripeCheckout.mutateAsync({ productId });
+      window.open(url, "_blank", "noopener,noreferrer");
+      toast.success("Secure Stripe Checkout opened in a new tab");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Checkout could not be started");
+    }
+  };
+  const selectPreviewSource = (value: string) => {
+    const [kind, rawId] = value.split(":");
+    if (kind === "asset") { setPreviewAssetId(Number(rawId)); return; }
+    setPreviewAssetId(null);
+    setCurrentTrackId(rawId as (typeof AUDIO_TRACKS)[number]["id"]);
   };
 
   const updateTrack = (id: string, update: Partial<TrackState>) => {
@@ -354,7 +436,7 @@ export default function Home() {
 
   return (
     <main className="parkway-app">
-      <audio ref={audioRef} src={activeTrack.src} preload="metadata" loop={isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); }} onError={() => toast.error(`Audio source failed to load: ${activeTrack.label}`)} />
+      <audio ref={audioRef} src={previewSource} preload="metadata" loop={isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); }} onError={() => toast.error(`Audio source failed to load: ${previewLabel}`)} />
       <div className="parkway-grid" />
       <aside className={`sidebar ${showBrowser ? "sidebar-open" : "sidebar-collapsed"}`}>
         <div className="brand-lockup"><div className="brand-mark"><AudioWaveform size={19} /></div>{showBrowser && <div><div className="brand-name">PARKWAY</div><div className="brand-sub">JIG CODE / DAW</div></div>}</div>
@@ -388,6 +470,7 @@ export default function Home() {
           <div className="lower-grid"><section className="mixer-panel panel"><div className="panel-header"><div><div className="section-kicker"><SlidersHorizontal size={13} /> Channel rack</div><h2>Mix bus <span className="muted-slash">/</span> <span>{soloActive ? `${soloedIds.length} soloed` : "Stereo out"}</span></h2></div><button className="outline-button outline-small" onClick={() => setTracksState(tracks.map((track) => ({ ...track, muted: false, solo: false, armed: false })))}><Power size={13} /> Reset</button></div><div className="mixer-list">{tracksState.map((track) => <div key={track.id} className={`mixer-row ${track.muted ? "is-muted" : ""} ${selectedTrack === track.id ? "mixer-selected" : ""}`} onClick={() => setSelectedTrack(track.id)}><div className={`mixer-name name-${track.color}`}><span className="channel-number">{String(tracksState.indexOf(track) + 1).padStart(2, "0")}</span><div><strong>{track.name}</strong><span>{track.type.toUpperCase()}</span></div></div><div className="mini-meter"><Meter active={isPlaying && !track.muted} accent={track.color} level={meterLevels[track.id] ?? 0} /><EqDisplay bands={selectedTrack === track.id ? eqBands : eqBands.map((band) => band * 0.35)} accent={track.color} /></div><div className="mixer-level"><input aria-label={`${track.name} level`} type="range" min="0" max="100" value={track.level} onChange={(event) => updateTrack(track.id, { level: Number(event.target.value) })} className={`range-${track.color}`} /><span>{track.level}</span></div><div className="mixer-actions"><button className={`mix-button ${track.muted ? "is-on" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { muted: !track.muted }); }}>M</button><button className={`mix-button ${track.solo ? "is-solo" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { solo: !track.solo }); }}>S</button><button className={`mix-button ${track.armed ? "is-armed" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { armed: !track.armed }); }}><Mic2 size={12} /></button></div></div>)}</div></section>
 
             <aside className="inspector panel"><div className="panel-header"><div><div className="section-kicker"><Gauge size={13} /> Inspector / selected track</div><h2>{selected.name}</h2></div><button className="icon-button"><ChevronDown size={14} /></button></div><div className="inspector-hero"><div className={`inspector-badge badge-${selected.color}`}><AudioWaveform size={22} /></div><div><div className="inspector-type">{selected.type.toUpperCase()} CHANNEL</div><div className="inspector-preset">{selected.preset}</div></div></div><div className="parameter"><div><span>Volume</span><strong>{selected.level}%</strong></div><input aria-label="Selected track volume" type="range" min="0" max="100" value={selected.level} onChange={(event) => updateTrack(selected.id, { level: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="parameter"><div><span>Pan</span><strong>{selected.pan > 0 ? `R ${selected.pan}` : selected.pan < 0 ? `L ${Math.abs(selected.pan)}` : "CENTER"}</strong></div><input aria-label="Selected track pan" type="range" min="-50" max="50" value={selected.pan} onChange={(event) => updateTrack(selected.id, { pan: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="plugin-stack"><div className="plugin-slot"><span>01</span><div><strong>JIG / TRANSIENT</strong><small>Active · 4.2 ms</small></div><ChevronDown size={13} /></div><div className="plugin-slot"><span>02</span><div><strong>PARKWAY SATURATOR</strong><small>Drive 18% · Air +3 dB</small></div><ChevronDown size={13} /></div><button className="add-plugin" onClick={() => toast("Plugin browser opened")}><Plus size={13} /> Add insert</button></div><div className="inspector-footer"><div><span>Peak</span><strong>-3.2 dB</strong></div><div><span>Headroom</span><strong>6.8 dB</strong></div></div></aside></div>
+          {activeView === "Studio" && <><MediaPreviewPlayer options={previewOptions} value={previewAsset ? `asset:${previewAsset.id}` : `track:${currentTrackId}`} label={previewLabel} detail={previewAsset ? `${previewAsset.assetType.toUpperCase()} · ${formatDuration(previewAsset.durationMs)}` : activeTrack.tag} bars={previewBars} duration={duration} currentTime={currentTime} isPlaying={isPlaying} zoom={waveformZoom} normalized={peakNormalize} onSourceChange={selectPreviewSource} onTogglePlay={() => void togglePlay()} onScrub={scrubPreview} onNudge={nudgePreview} onZoom={setWaveformZoom} onNormalize={() => setPeakNormalize((value) => !value)} /><CommercePanel products={billingCatalog.data} loading={billingCatalog.isLoading} pending={stripeCheckout.isPending} onCheckout={(productId) => void startCheckout(productId)} /></>}
         </div></section>
     </main>
   );

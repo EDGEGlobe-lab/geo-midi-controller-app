@@ -5,6 +5,8 @@ import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { createGenerationJob, createSamplerOutput, createStudioAsset, listGenerationJobs, listSamplerOutputs, listStudioAssets, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
+import Stripe from "stripe";
+import { studioProducts, type StudioProductId } from "./products";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
@@ -18,6 +20,36 @@ export const appRouter = router({
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
+    }),
+  }),
+  billing: router({
+    catalog: publicProcedure.query(() => Object.values(studioProducts)),
+    checkout: protectedProcedure.input(z.object({ productId: z.enum(["asset-starter", "cloud-membership"]) })).mutation(async ({ ctx, input }) => {
+      const product = studioProducts[input.productId as StudioProductId];
+      const secretKey = process.env.STRIPE_SECRET_KEY;
+      if (!secretKey) throw new Error("Stripe is not configured. Open Settings → Payment to finish setup.");
+      const stripe = new Stripe(secretKey);
+      const origin = ctx.req.headers.origin ?? `${ctx.req.protocol}://${ctx.req.headers.host}`;
+      const session = await stripe.checkout.sessions.create({
+        mode: product.mode,
+        line_items: [{
+          price_data: {
+            currency: product.currency,
+            product_data: { name: product.name, description: product.description },
+            unit_amount: product.unitAmount,
+            ...(product.mode === "subscription" ? { recurring: { interval: product.interval } } : {}),
+          },
+          quantity: 1,
+        }],
+        customer_email: ctx.user.email ?? undefined,
+        client_reference_id: ctx.user.id.toString(),
+        metadata: { user_id: ctx.user.id.toString(), customer_email: ctx.user.email ?? "", customer_name: ctx.user.name ?? "", product_id: product.id },
+        allow_promotion_codes: true,
+        success_url: `${origin}/?checkout=success&session_id={CHECKOUT_SESSION_ID}`,
+        cancel_url: `${origin}/?checkout=cancelled`,
+      });
+      if (!session.url) throw new Error("Stripe did not return a Checkout URL");
+      return { url: session.url };
     }),
   }),
   studio: router({

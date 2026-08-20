@@ -36,3 +36,20 @@
 - [x] Apply HETG/CIAO and neon NGT/ANNGT constellation styling as a clearly labeled abstract metadata treatment.
 - [x] Add Vitest coverage for generation-job authorization and state transitions.
 - [x] Verify typecheck, tests, build, responsive UI, and save a final checkpoint.
+
+## Reusable Skill and Preview Player
+
+- [x] Create and validate a reusable PARKWAY cloud music-studio workflow skill.
+- [x] Add a dedicated media preview player with waveform zoom controls.
+- [x] Add pointer and keyboard waveform scrubbing with accessible time readout.
+- [x] Add Web Audio peak normalization controls for preview playback.
+- [x] Apply the original underground-techno pink passcode and pattern-network visual treatment.
+- [x] Verify new preview controls on mobile, save a fresh checkpoint, and deliver the skill package.
+
+## Stripe Purchases and Subscriptions
+
+- [x] Enable the Stripe integration and review its generated checkout contracts.
+- [x] Add one-time product purchase and recurring subscription entry points.
+- [x] Add frontend checkout success/cancel feedback and verify return states.
+- [x] Verify payment UI at desktop/mobile sizes and document required sandbox test steps.
+- [x] Save a checkpoint and deliver the payment-ready project.
