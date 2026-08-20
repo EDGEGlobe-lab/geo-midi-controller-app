@@ -99,6 +99,15 @@
 - [x] Add automated tests that enforce disabled-by-default activation, owner scope, consent requirement, and revocation behavior.
 - [x] Update the reusable PARKWAY cloud music-studio skill with the verified product-content and consent-first activation workflow, then validate it.
 - [x] Verify the expanded launch and studio interface on desktop/mobile, run typecheck, 12 Vitest assertions, and a production build.
-- [ ] Publish the verified launch and consent-first device-access release.
+- [x] Publish the verified launch and consent-first device-access release.
 - [x] Add API-level Vitest coverage for protected hardware register, activate, and revoke procedures, including unauthenticated denial, disabled creation, consent rejection, owner scope, and revocation behavior.
 - [x] Add procedure-specific unauthenticated tests for hardware register, activate, and revoke, plus an API-level non-owner revoke denial test.
+
+## Playback-First DAW Product Readiness
+
+- [x] Audit why browser sample playback remains muted and expose a clear software-only recovery state.
+- [x] Explicitly define the application as a non-recording, non-live-capture DAW product surface with no microphone, vocal, or connected-instrument capture path.
+- [x] Make sample playback, playable browser MIDI pads, and software mixer controls the primary ready-to-use product controls.
+- [x] Add a firmware/software asset-readiness panel that clearly labels product updates as local/browser assets rather than device firmware delivery.
+- [x] Add automated coverage for playback-only boundaries and asset-readiness states, then verify typecheck, 19 tests, production build, and desktop/mobile UI.
+- [ ] Publish the playback-first DAW product update and request final browser-output confirmation.
