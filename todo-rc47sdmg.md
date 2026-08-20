@@ -80,3 +80,11 @@
 - [x] Compact the workspace into clearer multi-function views for production, performance, Studio, Assets, and Contact.
 - [x] Test source code, typecheck, tests, production build, and desktop/mobile compact layouts.
 - [ ] Confirm audible output on the user’s selected stereo device by clicking Enable Stereo and then Play; browser autoplay policy requires this final user gesture.
+
+## Channel Rack and Stereo Out Reliability
+
+- [x] Audit the Channel Rack, Mix Bus, and Stereo Out audio-node connections and mute states.
+- [x] Make source routing idempotent so track selection cannot disconnect the live media path.
+- [x] Add visible Channel Rack, Mix Bus, and Stereo Out recovery status indicators.
+- [x] Add a user-gesture recovery action that resets muted media, resumes AudioContext, unmutes the active channel, and reconnects it safely.
+- [x] Verify typecheck, 9 Vitest assertions, production build, and desktop/mobile UI for the repaired audio chain.

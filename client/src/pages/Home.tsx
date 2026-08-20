@@ -1,6 +1,7 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
+import { clampMasterVolume } from "@/lib/audioSafety";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -112,8 +113,8 @@ function ContactPanel({ draft, setDraft, pending, onSubmit }: { draft: ContactDr
   return <section className="contact-panel panel"><div className="panel-header"><div><div className="section-kicker"><Radio size={13} /> Client enquiry / non-transactional</div><h2>Start a service conversation <span className="muted-slash">/</span> <span>secure follow-up</span></h2></div><span className="small-pill">NO PAYMENT DATA</span></div><p className="contact-copy">Describe the production service you need. You may request payment details for a later direct conversation, but never send card numbers, bank-account details, transfer credentials, or identity documents through this form.</p><form className="contact-form" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><input className="contact-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" value={draft.website} onChange={(event) => setDraft((value) => ({ ...value, website: event.target.value }))} /><label><span>Name</span><input required minLength={2} maxLength={160} value={draft.name} onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} placeholder="Your name" /></label><label><span>Email</span><input required type="email" maxLength={320} value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} placeholder="you@example.com" /></label><label><span>Service interest</span><select value={draft.serviceInterest} onChange={(event) => setDraft((value) => ({ ...value, serviceInterest: event.target.value as ContactDraft["serviceInterest"] }))}><option value="production">Music production</option><option value="mix-master">Mixing & mastering</option><option value="studio-system">Studio system design</option><option value="other">Other service</option></select></label><label className="contact-message"><span>Project brief</span><textarea required minLength={12} maxLength={4000} value={draft.message} onChange={(event) => setDraft((value) => ({ ...value, message: event.target.value }))} placeholder="Tell us about the project, timeline, and the help you need." /></label><label className="contact-check"><input type="checkbox" checked={draft.paymentDetailsRequested} onChange={(event) => setDraft((value) => ({ ...value, paymentDetailsRequested: event.target.checked }))} /><span>Request payment details for a later direct follow-up.</span></label><button className="solid-button" disabled={pending} type="submit">{pending ? "Sending enquiry…" : "Send service enquiry"}</button></form></section>;
 }
 
-function StereoControl({ master, status, compact, onEnable, onMasterChange, onCompactToggle }: { master: number; status: "locked" | "ready" | "error"; compact: boolean; onEnable: () => void; onMasterChange: (value: number) => void; onCompactToggle: () => void }) {
-  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 45 percent" type="range" min="45" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
+function StereoControl({ master, status, channel, mixBus, compact, onEnable, onMasterChange, onCompactToggle }: { master: number; status: "locked" | "ready" | "error"; channel: "idle" | "ready" | "error"; mixBus: "idle" | "ready" | "error"; compact: boolean; onEnable: () => void; onMasterChange: (value: number) => void; onCompactToggle: () => void }) {
+  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><div className="route-health" aria-label={`Channel Rack ${channel}; Mix Bus ${mixBus}; Stereo Out ${status}`}><span className={`route-${channel}`}>CH</span><i /> <span className={`route-${mixBus}`}>BUS</span><i /> <span className={`route-${status}`}>OUT</span></div><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 45 percent" type="range" min="45" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
 }
 
 type AssetFocusItem = { id: number; filename: string; assetType: string; durationMs: number | null; tags: string | null };
@@ -147,8 +148,10 @@ export default function Home() {
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [tempo, setTempo] = useState(156);
-  const [master, setMaster] = useState(() => Math.max(45, Math.min(100, Number(window.localStorage.getItem("parkway-master-volume") ?? 82) || 82)));
+  const [master, setMaster] = useState(() => clampMasterVolume(Number(window.localStorage.getItem("parkway-master-volume") ?? 82) || 82));
   const [stereoStatus, setStereoStatus] = useState<"locked" | "ready" | "error">("locked");
+  const [channelStatus, setChannelStatus] = useState<"idle" | "ready" | "error">("idle");
+  const [mixBusStatus, setMixBusStatus] = useState<"idle" | "ready" | "error">("idle");
   const [compactMode, setCompactMode] = useState(() => window.localStorage.getItem("parkway-compact-mode") === "true");
   const [activeBar, setActiveBar] = useState(8);
   const [selectedTrack, setSelectedTrack] = useState("pluck");
@@ -252,7 +255,7 @@ export default function Home() {
       audioRef.current.volume = 1;
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.78;
-      masterGain.gain.value = Math.max(45, master) / 100;
+      masterGain.gain.value = clampMasterVolume(master) / 100;
       normalizer.threshold.value = 0;
       normalizer.knee.value = 0;
       normalizer.ratio.value = 1;
@@ -276,35 +279,50 @@ export default function Home() {
         pan.connect(analyser);
         trackNodesRef.current[track.id] = { gain, pan };
       });
-      const activeNode = trackNodesRef.current[selectedTrack];
-      if (activeNode) source.connect(activeNode.gain);
+      routeSourceToTrack(selectedTrack);
     }
     return audioContextRef.current;
   };
 
-  useEffect(() => {
-    const node = trackNodesRef.current[selectedTrack];
+  function routeSourceToTrack(trackId: string) {
     const source = sourceNodeRef.current;
-    if (!node || !source) return;
-    try { source.disconnect(); } catch {}
-    source.connect(node.gain);
-  }, [selectedTrack]);
+    const node = trackNodesRef.current[trackId];
+    if (!source || !node) { setChannelStatus("error"); return false; }
+    try {
+      source.disconnect();
+      source.connect(node.gain);
+      setChannelStatus("ready");
+      setMixBusStatus("ready");
+      return true;
+    } catch (error) {
+      console.error("[Audio] Channel Rack route recovery failed", error);
+      setChannelStatus("error");
+      setMixBusStatus("error");
+      return false;
+    }
+  }
 
   useEffect(() => {
-    const node = trackNodesRef.current[selectedTrack];
-    const source = sourceNodeRef.current;
-    if (!node || !source) return;
-    try { source.disconnect(); } catch {}
-    source.connect(node.gain);
-  }, [currentTrackId]);
+    if (sourceNodeRef.current) routeSourceToTrack(selectedTrack);
+  }, [selectedTrack, currentTrackId]);
 
   useEffect(() => {
     const masterGain = masterGainRef.current;
-    const safeMaster = Math.max(45, Math.min(100, master));
+    const safeMaster = clampMasterVolume(master);
     if (safeMaster !== master) { setMaster(safeMaster); return; }
     window.localStorage.setItem("parkway-master-volume", String(safeMaster));
     if (masterGain && audioContextRef.current) masterGain.gain.setTargetAtTime(safeMaster / 100, audioContextRef.current.currentTime, 0.025);
   }, [master]);
+
+  useEffect(() => {
+    const soloEnabled = tracksState.some((track) => track.solo);
+    tracksState.forEach((track) => {
+      const node = trackNodesRef.current[track.id];
+      if (!node || !audioContextRef.current) return;
+      const audible = !track.muted && (!soloEnabled || track.solo);
+      node.gain.gain.setTargetAtTime(audible ? Math.max(0.01, track.level / 100) : 0.0001, audioContextRef.current.currentTime, 0.012);
+    });
+  }, [tracksState]);
 
   useEffect(() => {
     window.localStorage.setItem("parkway-compact-mode", String(compactMode));
@@ -316,6 +334,14 @@ export default function Home() {
     normalizer.threshold.value = peakNormalize ? -3 : 0;
     normalizer.ratio.value = peakNormalize ? 12 : 1;
   }, [peakNormalize]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    const onAudioError = () => { setChannelStatus("error"); setMixBusStatus("error"); setStereoStatus("error"); };
+    audio.addEventListener("error", onAudioError);
+    return () => audio.removeEventListener("error", onAudioError);
+  }, []);
 
   useEffect(() => {
     if (!isPlaying || !analyserRef.current) return;
@@ -356,6 +382,10 @@ export default function Home() {
       audioRef.current.muted = false;
       audioRef.current.volume = 1;
       if (context.state !== "running") await context.resume();
+      setTracksState((items) => items.map((track) => track.id === selectedTrack ? { ...track, muted: false } : track));
+      if (!routeSourceToTrack(selectedTrack)) throw new Error("Active Channel Rack route is unavailable");
+      const activeNode = trackNodesRef.current[selectedTrack];
+      if (activeNode) activeNode.gain.gain.setTargetAtTime(Math.max(0.01, (tracksState.find((track) => track.id === selectedTrack)?.level ?? 70) / 100), context.currentTime, 0.015);
       setStereoStatus("ready");
       toast.success("Stereo output enabled. Master level is protected at 45% or above.");
       return true;
@@ -490,7 +520,7 @@ export default function Home() {
         <header className="topbar"><div className="topbar-left"><button className="mobile-menu" onClick={() => setShowBrowser((value) => !value)}><Menu size={16} /></button><div className="breadcrumb"><span>SESSIONS</span><span className="crumb-separator">/</span><strong>Night Drive</strong><span className="saved-state"><span /> Autosaved</span></div></div><div className="top-actions"><button className="icon-button" onClick={() => toast("Search is ready for instruments, clips, and commands")}><Search size={15} /></button><button className="icon-button" onClick={() => toast("Settings panel coming soon")}><Settings2 size={15} /></button><button className="user-chip" onClick={() => toast("PARKWAY operator profile")}>JM</button></div></header>
 
         <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : stereoStatus === "ready" ? "STEREO READY" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
-        <StereoControl master={master} status={stereoStatus} compact={compactMode} onEnable={() => void enableStereo()} onMasterChange={setMaster} onCompactToggle={() => setCompactMode((value) => { const next = !value; setShowBrowser(!next); return next; })} />
+        <StereoControl master={master} status={stereoStatus} channel={channelStatus} mixBus={mixBusStatus} compact={compactMode} onEnable={() => void enableStereo()} onMasterChange={setMaster} onCompactToggle={() => setCompactMode((value) => { const next = !value; setShowBrowser(!next); return next; })} />
 
         <div className="content-scroll"><div className="workspace-heading"><div><div className="section-kicker"><Radio size={13} /> {activeView} / MASTER SESSION</div><h1>Master bus.<br /><em>Ready to move.</em></h1><p className="heading-copy">Transport, timing, and signal routing in one tactile performance surface.</p><div className="master-readout"><div className="readout-scope"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="readout-meta"><span>MASTER / STEREO</span><strong>{master}%</strong><small>-3.2 dB peak · 6.8 dB headroom</small></div><div className="readout-state"><span className="status-light" /> READY</div></div></div><div className="heading-tools"><button className="outline-button" onClick={() => toast("New track added to the session")}><Plus size={14} /> Add track</button><button className="solid-button" onClick={() => toast("Render queue started")}><Zap size={14} /> Render</button></div></div>
 
