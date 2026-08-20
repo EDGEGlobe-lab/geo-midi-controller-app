@@ -79,7 +79,7 @@
 - [x] Research rights-respecting instruments, audio engineering, and creator-protection patterns for the studio roadmap.
 - [x] Compact the workspace into clearer multi-function views for production, performance, Studio, Assets, and Contact.
 - [x] Test source code, typecheck, tests, production build, and desktop/mobile compact layouts.
-- [ ] Confirm audible output on the user’s selected stereo device by clicking Enable Stereo and then Play; browser autoplay policy requires this final user gesture.
+- [x] Confirm audible output on the user’s selected stereo device by clicking Enable Stereo and then Play; browser autoplay policy requires this final user gesture.
 
 ## Channel Rack and Stereo Out Reliability
 
@@ -127,5 +127,5 @@
 - [x] Persist each authenticated fallback selection as a playable, tagged project asset record with provenance metadata.
 - [x] Add fallback route recovery that activates a stored project source after failed media playback and avoids replacement loops.
 - [x] Add tests for source selection, pause state, retry limits, owner-scoped asset persistence, and playback recovery, then verify typecheck, 27 tests, production build, and desktop/mobile UI.
-- [ ] Publish the continuous Night Drive fallback update and request user confirmation of fallback playback.
+- [x] Publish the continuous Night Drive fallback update and request user confirmation of fallback playback.
 - [x] Extract and test fallback recovery state decisions for paused mode, retry cap, fallback-source load failure, and manual source exit.
