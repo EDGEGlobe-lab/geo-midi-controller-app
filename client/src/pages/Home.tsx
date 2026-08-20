@@ -12,6 +12,7 @@ import { CompatibilityFeedbackPanel } from "@/components/CompatibilityFeedbackPa
 import { CompatibilityReviewPanel } from "@/components/CompatibilityReviewPanel";
 import { Inf4RadarDisplay } from "@/components/Inf4RadarDisplay";
 import { HardwareDevelopmentPanel } from "@/components/HardwareDevelopmentPanel";
+import { ManusMusicUploadPanel, type ManusUploadStage } from "@/components/ManusMusicUploadPanel";
 import { getAdjacentStationProgramme, getStationProgramme, parkwayRadioStations } from "@shared/radioStationCatalog";
 import { isExpectedOperationAbort } from "@/lib/operationAbort";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -177,7 +178,7 @@ export default function Home() {
   const [selectedTrack, setSelectedTrack] = useState("pluck");
   const [activeView, setActiveView] = useState(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Radio", "Product", "Devices", "Develop", "Assets", "History", "Feedback", "Review", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
+    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Generator", "Radio", "Product", "Devices", "Develop", "Assets", "History", "Feedback", "Review", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
   });
   const [showBrowser, setShowBrowser] = useState(() => window.innerWidth >= 760);
   const [tracksState, setTracksState] = useState<TrackState[]>(() => tracks.map((track) => ({ ...track, muted: false, solo: false, armed: track.id === "pluck" })));
@@ -193,6 +194,8 @@ export default function Home() {
   const [trackedVisits, setTrackedVisits] = useState(0);
   const [assetType, setAssetType] = useState<"audio" | "vocal" | "sfx" | "sample" | "motion" | "image" | "other">("audio");
   const [uploadingAsset, setUploadingAsset] = useState(false);
+  const [uploadingManusMusic, setUploadingManusMusic] = useState(false);
+  const [manusUploadStage, setManusUploadStage] = useState<ManusUploadStage>("idle");
   const [generationState, setGenerationState] = useState<"idle" | "awaiting-approval" | "running" | "completed">("idle");
   const [samplerLaneState, setSamplerLaneState] = useState<Record<string, "ready" | "queued" | "complete">>(() => Object.fromEntries(samplerSeeds.map((item) => [item.id, "ready"])));
   const [assetTags, setAssetTags] = useState("night-drive, neon-pink");
@@ -219,6 +222,7 @@ export default function Home() {
   const projectKey = "night-drive-07";
   const assetsQuery = trpc.studio.assets.list.useQuery({ projectKey }, { enabled: isAuthenticated });
   const uploadAsset = trpc.studio.assets.upload.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Asset stored in the cloud project library"); }, onError: (error) => toast.error(error.message) });
+  const uploadManusMusic = trpc.studio.assets.uploadManusMusic.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Approved music stored with source-provenance tags"); }, onError: (error) => toast.error(error.message) });
   const updateAssetTags = trpc.studio.assets.updateTags.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Asset tags updated"); } });
   const jobsQuery = trpc.studio.jobs.list.useQuery({ projectKey }, { enabled: isAuthenticated });
   const samplerQuery = trpc.studio.sampler.list.useQuery({ projectKey }, { enabled: isAuthenticated });
@@ -678,6 +682,27 @@ export default function Home() {
       await uploadAsset.mutateAsync({ projectKey, filename: file.name, mimeType: file.type || "application/octet-stream", assetType, dataBase64, durationMs: metadata.durationMs, waveformPreview: metadata.waveformPreview, tags: assetTags.split(",").map((tag) => tag.trim()).filter(Boolean) });
     } finally { setUploadingAsset(false); }
   };
+  const handleManusMusicUpload = async (file: File) => {
+    if (!isAuthenticated) { toast("Sign in to store music in your private project library"); startLogin(); return; }
+    if (!file.type.startsWith("audio/")) { toast.error("Select a supported audio file for the Manus Music Generator lane"); return; }
+    if (file.size > 30 * 1024 * 1024) { toast.error("Music uploads must be 30 MB or smaller"); return; }
+    setUploadingManusMusic(true);
+    setManusUploadStage("reading");
+    try {
+      setManusUploadStage("analysing");
+      const metadata = await extractMediaMetadata(file);
+      setManusUploadStage("uploading");
+      const dataBase64 = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1] ?? ""); reader.onerror = () => reject(new Error("Could not read the audio file")); reader.readAsDataURL(file); });
+      const stored = await uploadManusMusic.mutateAsync({ projectKey, filename: file.name, mimeType: file.type, dataBase64, durationMs: metadata.durationMs, waveformPreview: metadata.waveformPreview, tags: [] });
+      selectPreviewSource(`asset:${stored.id}`);
+      setManusUploadStage("stored");
+      toast.success("Music stored and selected for the stereo preview. Press Play to listen.");
+    } catch (error) { setManusUploadStage("error"); toast.error(error instanceof Error ? error.message : "The approved music file could not be stored"); } finally { setUploadingManusMusic(false); }
+  };
+  const playManusMusicAsset = (assetId: number) => {
+    selectPreviewSource(`asset:${assetId}`);
+    window.setTimeout(() => void togglePlay(), 0);
+  };
   const playPad = (index: number) => {
     setPressedPads((items) => Array.from(new Set([...items, index])));
     window.setTimeout(() => setPressedPads((items) => items.filter((item) => item !== index)), 140);
@@ -701,7 +726,7 @@ export default function Home() {
         {showBrowser && <>
           <div className="side-label">Workspace</div>
           <nav className="side-nav">
-            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Radio", icon: Radio }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Develop", icon: Code2 }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Feedback", icon: AlertTriangle }, ...(user?.role === "admin" ? [{ label: "Review", icon: ShieldCheck }] : []), { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
+            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Generator", icon: Waves }, { label: "Radio", icon: Radio }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Develop", icon: Code2 }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Feedback", icon: AlertTriangle }, ...(user?.role === "admin" ? [{ label: "Review", icon: ShieldCheck }] : []), { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
           </nav>
           <div className="side-label">Project</div>
           <div className="project-card"><div className="project-orbit"><Disc3 size={18} /></div><div className="min-w-0"><div className="project-title">Night Drive / 07</div><div className="project-meta">D major · 156 BPM</div></div><ChevronDown size={14} className="text-muted" /></div>
@@ -731,6 +756,7 @@ export default function Home() {
 
             <aside className="inspector panel"><div className="panel-header"><div><div className="section-kicker"><Gauge size={13} /> Inspector / selected track</div><h2>{selected.name}</h2></div><button className="icon-button"><ChevronDown size={14} /></button></div><div className="inspector-hero"><div className={`inspector-badge badge-${selected.color}`}><AudioWaveform size={22} /></div><div><div className="inspector-type">{selected.type.toUpperCase()} CHANNEL</div><div className="inspector-preset">{selected.preset}</div></div></div><div className="parameter"><div><span>Volume</span><strong>{selected.level}%</strong></div><input aria-label="Selected track volume" type="range" min="0" max="100" value={selected.level} onChange={(event) => updateTrack(selected.id, { level: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="parameter"><div><span>Pan</span><strong>{selected.pan > 0 ? `R ${selected.pan}` : selected.pan < 0 ? `L ${Math.abs(selected.pan)}` : "CENTER"}</strong></div><input aria-label="Selected track pan" type="range" min="-50" max="50" value={selected.pan} onChange={(event) => updateTrack(selected.id, { pan: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="plugin-stack"><div className="plugin-slot"><span>01</span><div><strong>JIG / TRANSIENT</strong><small>Active · 4.2 ms</small></div><ChevronDown size={13} /></div><div className="plugin-slot"><span>02</span><div><strong>PARKWAY SATURATOR</strong><small>Drive 18% · Air +3 dB</small></div><ChevronDown size={13} /></div><button className="add-plugin" onClick={() => toast("Plugin browser opened")}><Plus size={13} /> Add insert</button></div><div className="inspector-footer"><div><span>Peak</span><strong>-3.2 dB</strong></div><div><span>Headroom</span><strong>6.8 dB</strong></div></div></aside></div>
           {activeView === "Studio" && <MediaPreviewPlayer options={previewOptions} value={previewAsset ? `asset:${previewAsset.id}` : `track:${currentTrackId}`} label={previewLabel} detail={previewAsset ? `${previewAsset.assetType.toUpperCase()} · ${formatDuration(previewAsset.durationMs)}` : activeTrack.tag} bars={previewBars} duration={duration} currentTime={currentTime} isPlaying={isPlaying} zoom={waveformZoom} normalized={peakNormalize} onSourceChange={selectPreviewSource} onTogglePlay={() => void togglePlay()} onScrub={scrubPreview} onNudge={nudgePreview} onZoom={setWaveformZoom} onNormalize={() => setPeakNormalize((value) => !value)} />}
+          {activeView === "Generator" && <ManusMusicUploadPanel authenticated={isAuthenticated} pending={uploadingManusMusic || uploadManusMusic.isPending} uploadStage={manusUploadStage} assets={assetsQuery.data ?? []} onLogin={startLogin} onUpload={(file) => void handleManusMusicUpload(file)} onPlay={playManusMusicAsset} />}
           {activeView === "Assets" && <AssetFocusPanel assets={assetsQuery.data ?? []} authenticated={isAuthenticated} onOpenStudio={() => setActiveView("Studio")} />}
           {activeView === "History" && <AudioSourceHistoryPanel items={sourceHistoryQuery.data ?? []} authenticated={isAuthenticated} pendingId={historyPendingId} onLogin={startLogin} onRestore={(assetId) => void restoreSourceVersion(assetId)} onDelete={(assetId) => void deleteSourceVersion(assetId)} />}
           {activeView === "Radio" && <RadioStationPanel stations={parkwayRadioStations} selectedStationId={radioStationId} selectedProgrammeId={radioProgrammeId} savedStationIds={(savedRadioQuery.data ?? []).map((item) => item.stationId)} authenticated={isAuthenticated} isPlaying={radioActive && isPlaying} volume={radioVolume} currentTime={currentTime} duration={duration} pending={saveRadioStation.isPending || removeRadioStation.isPending} onLogin={startLogin} onSelectStation={selectRadioStation} onSelectProgramme={selectRadioProgramme} onTogglePlay={toggleRadioPlayback} onPrevious={() => stepRadioProgramme(-1, radioActive && isPlaying)} onNext={() => stepRadioProgramme(1, radioActive && isPlaying)} onVolumeChange={changeRadioVolume} onSave={(stationId) => void saveRadioStation.mutateAsync({ stationId })} onRemove={(stationId) => void removeRadioStation.mutateAsync({ stationId })} />}

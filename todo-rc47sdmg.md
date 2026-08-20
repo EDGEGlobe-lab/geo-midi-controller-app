@@ -177,9 +177,11 @@
 
 ## Manus AI Music Generator Asset Upload
 
-- [ ] Define the user-initiated AI music upload boundary, including source provenance labels and no claim that external audio was rendered by Manus unless verified.
-- [ ] Add an authenticated upload lane that validates audio file type and size, extracts duration/waveform metadata, and persists approved music as a playable project asset.
-- [ ] Add a clear Project Asset Generator surface with approval status, provenance, upload progress, playable asset selection, and error handling.
+- [x] Define the user-initiated AI music upload boundary, including source provenance labels and no claim that external audio was rendered by Manus unless verified.
+- [x] Add an authenticated upload lane that validates audio file type and size, extracts duration/waveform metadata, and persists approved music as a playable project asset.
+- [x] Add a clear Project Asset Generator surface with approval status, provenance, upload progress, playable asset selection, and error handling.
+- [x] Add API coverage for authentication, MIME and size validation, provenance tags, and stored playable-asset references; verify responsive UI, typecheck, 46 tests, and production build.
+- [x] Add real staged upload-progress feedback and explicit per-asset approval/provenance badges in the Generator asset list.
 - [ ] Add tests for authentication, MIME/size validation, provenance tags, asset persistence, and playback-source selection; verify responsive UI, typecheck, build, publish, and user playback confirmation.
 
 ## Functional PARKWAY Radio Station

@@ -1,0 +1,12 @@
+.manus-upload-progress { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 9px; align-items: center; margin-top: 8px; padding: 9px 11px; border: 1px solid rgba(255, 51, 153, .18); border-radius: 6px; background: rgba(255, 255, 255, .025); }
+.manus-upload-progress > div { height: 4px; overflow: hidden; border-radius: 4px; background: rgba(255, 255, 255, .1); }
+.manus-upload-progress > div span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--pink), var(--cyan)); transition: width 180ms var(--ease-out, ease-out); }
+.manus-upload-progress strong { color: #fff0f7; font: 8px "IBM Plex Mono", monospace; }
+.manus-upload-progress small { color: var(--pink); font: 8px "IBM Plex Mono", monospace; }
+.manus-upload-progress.stage-stored { border-color: rgba(85, 230, 255, .32); }
+.manus-upload-progress.stage-stored > div span { background: var(--cyan); }
+.manus-upload-progress.stage-error { border-color: rgba(255, 200, 97, .32); }
+.manus-upload-progress.stage-error > div span { background: var(--amber); }
+.manus-status-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+.manus-status-badges span { padding: 2px 4px; border: 1px solid rgba(85, 230, 255, .24); border-radius: 3px; color: var(--cyan); background: rgba(85, 230, 255, .055); font: 7px "IBM Plex Mono", monospace; letter-spacing: .04em; }
+@media (max-width: 760px) { .manus-upload-progress { grid-template-columns: minmax(0, 1fr) auto; }.manus-upload-progress strong { grid-column: 1 / -1; } }

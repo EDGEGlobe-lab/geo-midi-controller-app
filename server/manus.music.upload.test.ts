@@ -31,4 +31,11 @@ describe("Manus AI music generator upload", () => {
     expect(db.createStudioAsset).toHaveBeenCalledWith(expect.objectContaining({ userId: 52, assetType: "audio", tags: JSON.stringify(["manus-ai-upload", "user-approved", "source-file-supplied", "night-drive"]) }));
     expect(storagePut).toHaveBeenCalledWith(expect.stringContaining("studio/52/night-drive-07/manus-music/"), expect.any(Buffer), "audio/wav");
   });
+
+  it("rejects oversized supplied audio before storage", async () => {
+    const oversizedDataBase64 = Buffer.alloc(30 * 1024 * 1024 + 1, 0).toString("base64");
+    await expect(appRouter.createCaller(contextFor(user)).studio.assets.uploadManusMusic({ ...input, dataBase64: oversizedDataBase64 })).rejects.toMatchObject({ code: "PAYLOAD_TOO_LARGE" });
+    expect(storagePut).not.toHaveBeenCalled();
+    expect(db.createStudioAsset).not.toHaveBeenCalled();
+  });
 });
