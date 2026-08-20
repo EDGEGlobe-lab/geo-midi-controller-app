@@ -6,6 +6,7 @@ import { clearFallbackForManualSource, decideFallbackRecovery } from "@/lib/fall
 import { DevicesSoundAccessPanel, type HardwareDraft } from "@/components/DevicesSoundAccessPanel";
 import { ProductReadinessPanel } from "@/components/ProductReadinessPanel";
 import { AIProjectFallbackPanel, type FallbackSelection } from "@/components/AIProjectFallbackPanel";
+import { AudioSourceHistoryPanel } from "@/components/AudioSourceHistoryPanel";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -167,7 +168,7 @@ export default function Home() {
   const [selectedTrack, setSelectedTrack] = useState("pluck");
   const [activeView, setActiveView] = useState(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Product", "Devices", "Assets", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
+    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Product", "Devices", "Assets", "History", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
   });
   const [showBrowser, setShowBrowser] = useState(() => window.innerWidth >= 760);
   const [tracksState, setTracksState] = useState<TrackState[]>(() => tracks.map((track) => ({ ...track, muted: false, solo: false, armed: track.id === "pluck" })));
@@ -197,6 +198,9 @@ export default function Home() {
   const [fallbackStatus, setFallbackStatus] = useState<"armed" | "paused" | "recovering" | "ready" | "failed">("armed");
   const [fallbackSelection, setFallbackSelection] = useState<FallbackSelection | null>(null);
   const [fallbackSourceUrl, setFallbackSourceUrl] = useState<string | null>(null);
+  const [historySourceUrl, setHistorySourceUrl] = useState<string | null>(null);
+  const [historySourceLabel, setHistorySourceLabel] = useState<string | null>(null);
+  const [historyPendingId, setHistoryPendingId] = useState<number | null>(null);
   const activeTrack = AUDIO_TRACKS.find((track) => track.id === currentTrackId) ?? AUDIO_TRACKS[0];
   const projectKey = "night-drive-07";
   const assetsQuery = trpc.studio.assets.list.useQuery({ projectKey }, { enabled: isAuthenticated });
@@ -204,10 +208,13 @@ export default function Home() {
   const updateAssetTags = trpc.studio.assets.updateTags.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Asset tags updated"); } });
   const jobsQuery = trpc.studio.jobs.list.useQuery({ projectKey }, { enabled: isAuthenticated });
   const samplerQuery = trpc.studio.sampler.list.useQuery({ projectKey }, { enabled: isAuthenticated });
+  const sourceHistoryQuery = trpc.studio.sourceHistory.list.useQuery({ projectKey }, { enabled: isAuthenticated });
   const createJob = trpc.studio.jobs.create.useMutation();
   const transitionJob = trpc.studio.jobs.transition.useMutation();
   const createSamplerOutput = trpc.studio.sampler.create.useMutation();
   const activateFallback = trpc.studio.fallback.activate.useMutation();
+  const restoreSourceHistory = trpc.studio.sourceHistory.restore.useMutation();
+  const deleteSourceHistory = trpc.studio.sourceHistory.delete.useMutation();
   const contactSubmit = trpc.contact.submit.useMutation();
   const hardwareQuery = trpc.hardware.list.useQuery(undefined, { enabled: isAuthenticated });
   const registerHardware = trpc.hardware.register.useMutation({ onSuccess: () => { setHardwareDraft({ label: "", category: "computer", productReference: "" }); void hardwareQuery.refetch(); toast.success("Device label registered in disabled state"); }, onError: (error) => toast.error(error.message) });
@@ -225,12 +232,15 @@ export default function Home() {
       const result = await activateFallback.mutateAsync({ projectKey, trigger, attempt });
       setFallbackSelection({ genre: result.genre, preGenerated: result.preGenerated, attempt: result.attempt });
       setFallbackSourceUrl(result.sourceUrl);
+      setHistorySourceUrl(null);
+      setHistorySourceLabel(null);
       setPreviewAssetId(null);
       setCurrentTrackId("autonomous-project");
       setFallbackStatus("ready");
       void assetsQuery.refetch();
       void jobsQuery.refetch();
       void samplerQuery.refetch();
+      void sourceHistoryQuery.refetch();
       toast.success(`Night Drive fallback stored: ${result.genre.label}. Press Play to start it.`);
       return true;
     } catch (error) {
@@ -244,8 +254,8 @@ export default function Home() {
   const activeCount = tracksState.filter((track) => !track.muted).length;
   const soloActive = tracksState.some((track) => track.solo);
   const previewAsset = (assetsQuery.data ?? []).find((asset) => asset.id === previewAssetId && asset.mimeType.startsWith("audio/"));
-  const previewSource = fallbackSourceUrl ?? (previewAsset ? `/manus-storage/${previewAsset.storageKey}` : activeTrack.src);
-  const previewLabel = fallbackSelection ? `Night Drive fallback · ${fallbackSelection.genre.label}` : previewAsset ? previewAsset.filename : activeTrack.label;
+  const previewSource = historySourceUrl ?? fallbackSourceUrl ?? (previewAsset ? `/manus-storage/${previewAsset.storageKey}` : activeTrack.src);
+  const previewLabel = historySourceLabel ?? (fallbackSelection ? `Night Drive fallback · ${fallbackSelection.genre.label}` : previewAsset ? previewAsset.filename : activeTrack.label);
   const previewBars = useMemo(() => {
     const bars = previewAsset ? parseWaveform(previewAsset.waveformPreview) : makeFallbackWaveform(new TextEncoder().encode(activeTrack.label), 64);
     const source = bars.length ? bars : makeFallbackWaveform(new TextEncoder().encode(previewLabel), 64);
@@ -419,7 +429,7 @@ export default function Home() {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [currentTrackId, previewAssetId, fallbackSourceUrl]);
+  }, [currentTrackId, previewAssetId, fallbackSourceUrl, historySourceUrl]);
 
   const enableStereo = async () => {
     const context = ensureAudioGraph();
@@ -483,9 +493,40 @@ export default function Home() {
     const clearedFallback = clearFallbackForManualSource();
     setFallbackSourceUrl(clearedFallback.fallbackSourceUrl);
     setFallbackSelection(clearedFallback.fallbackSelection);
+    setHistorySourceUrl(null);
+    setHistorySourceLabel(null);
     if (kind === "asset") { setPreviewAssetId(Number(rawId)); return; }
     setPreviewAssetId(null);
     setCurrentTrackId(rawId as (typeof AUDIO_TRACKS)[number]["id"]);
+  };
+  const restoreSourceVersion = async (assetId: number) => {
+    setHistoryPendingId(assetId);
+    try {
+      const restored = await restoreSourceHistory.mutateAsync({ projectKey, assetId });
+      const clearedFallback = clearFallbackForManualSource();
+      setFallbackSourceUrl(clearedFallback.fallbackSourceUrl);
+      setFallbackSelection(clearedFallback.fallbackSelection);
+      setPreviewAssetId(null);
+      setHistorySourceUrl(restored.sourceUrl);
+      setHistorySourceLabel(restored.filename);
+      stop();
+      void sourceHistoryQuery.refetch();
+      toast.success(`Restored source version: ${restored.filename}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not restore this source version");
+    } finally { setHistoryPendingId(null); }
+  };
+  const deleteSourceVersion = async (assetId: number) => {
+    if (!window.confirm("Delete this source version from the project history? The stored audio file will not be removed.")) return;
+    setHistoryPendingId(assetId);
+    try {
+      await deleteSourceHistory.mutateAsync({ projectKey, assetId });
+      void sourceHistoryQuery.refetch();
+      void assetsQuery.refetch();
+      toast.success("Source version removed from this project history");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete this source version");
+    } finally { setHistoryPendingId(null); }
   };
   const submitContactEnquiry = async () => {
     try {
@@ -562,7 +603,7 @@ export default function Home() {
         {showBrowser && <>
           <div className="side-label">Workspace</div>
           <nav className="side-nav">
-            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Assets", icon: FolderOpen }, { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
+            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
           </nav>
           <div className="side-label">Project</div>
           <div className="project-card"><div className="project-orbit"><Disc3 size={18} /></div><div className="min-w-0"><div className="project-title">Night Drive / 07</div><div className="project-meta">D major · 156 BPM</div></div><ChevronDown size={14} className="text-muted" /></div>
@@ -576,7 +617,7 @@ export default function Home() {
       <section className="workspace">
         <header className="topbar"><div className="topbar-left"><button className="mobile-menu" onClick={() => setShowBrowser((value) => !value)}><Menu size={16} /></button><div className="breadcrumb"><span>SESSIONS</span><span className="crumb-separator">/</span><strong>Night Drive</strong><span className="saved-state"><span /> Autosaved</span></div></div><div className="top-actions"><button className="icon-button" onClick={() => toast("Search is ready for instruments, clips, and commands")}><Search size={15} /></button><button className="icon-button" onClick={() => toast("Settings panel coming soon")}><Settings2 size={15} /></button><button className="user-chip" onClick={() => toast("PARKWAY operator profile")}>JM</button></div></header>
 
-        <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : stereoStatus === "ready" ? "STEREO READY" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { const clearedFallback = clearFallbackForManualSource(); setFallbackSourceUrl(clearedFallback.fallbackSourceUrl); setFallbackSelection(clearedFallback.fallbackSelection); setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
+        <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : stereoStatus === "ready" ? "STEREO READY" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { const clearedFallback = clearFallbackForManualSource(); setFallbackSourceUrl(clearedFallback.fallbackSourceUrl); setFallbackSelection(clearedFallback.fallbackSelection); setHistorySourceUrl(null); setHistorySourceLabel(null); setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
         <StereoControl master={master} status={stereoStatus} channel={channelStatus} mixBus={mixBusStatus} compact={compactMode} onEnable={() => void enableStereo()} onMasterChange={setMaster} onCompactToggle={() => setCompactMode((value) => { const next = !value; setShowBrowser(!next); return next; })} />
 
         <div className="content-scroll"><div className="workspace-heading"><div><div className="section-kicker"><Radio size={13} /> {activeView} / MASTER SESSION</div><h1>Master bus.<br /><em>Ready to move.</em></h1><p className="heading-copy">Transport, timing, and signal routing in one tactile performance surface.</p><div className="master-readout"><div className="readout-scope"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="readout-meta"><span>MASTER / STEREO</span><strong>{master}%</strong><small>-3.2 dB peak · 6.8 dB headroom</small></div><div className="readout-state"><span className="status-light" /> READY</div></div></div><div className="heading-tools"><button className="outline-button" onClick={() => toast("New track added to the session")}><Plus size={14} /> Add track</button><button className="solid-button" onClick={() => toast("Render queue started")}><Zap size={14} /> Render</button></div></div>
@@ -592,6 +633,7 @@ export default function Home() {
             <aside className="inspector panel"><div className="panel-header"><div><div className="section-kicker"><Gauge size={13} /> Inspector / selected track</div><h2>{selected.name}</h2></div><button className="icon-button"><ChevronDown size={14} /></button></div><div className="inspector-hero"><div className={`inspector-badge badge-${selected.color}`}><AudioWaveform size={22} /></div><div><div className="inspector-type">{selected.type.toUpperCase()} CHANNEL</div><div className="inspector-preset">{selected.preset}</div></div></div><div className="parameter"><div><span>Volume</span><strong>{selected.level}%</strong></div><input aria-label="Selected track volume" type="range" min="0" max="100" value={selected.level} onChange={(event) => updateTrack(selected.id, { level: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="parameter"><div><span>Pan</span><strong>{selected.pan > 0 ? `R ${selected.pan}` : selected.pan < 0 ? `L ${Math.abs(selected.pan)}` : "CENTER"}</strong></div><input aria-label="Selected track pan" type="range" min="-50" max="50" value={selected.pan} onChange={(event) => updateTrack(selected.id, { pan: Number(event.target.value) })} className={`range-${selected.color}`} /></div><div className="plugin-stack"><div className="plugin-slot"><span>01</span><div><strong>JIG / TRANSIENT</strong><small>Active · 4.2 ms</small></div><ChevronDown size={13} /></div><div className="plugin-slot"><span>02</span><div><strong>PARKWAY SATURATOR</strong><small>Drive 18% · Air +3 dB</small></div><ChevronDown size={13} /></div><button className="add-plugin" onClick={() => toast("Plugin browser opened")}><Plus size={13} /> Add insert</button></div><div className="inspector-footer"><div><span>Peak</span><strong>-3.2 dB</strong></div><div><span>Headroom</span><strong>6.8 dB</strong></div></div></aside></div>
           {activeView === "Studio" && <MediaPreviewPlayer options={previewOptions} value={previewAsset ? `asset:${previewAsset.id}` : `track:${currentTrackId}`} label={previewLabel} detail={previewAsset ? `${previewAsset.assetType.toUpperCase()} · ${formatDuration(previewAsset.durationMs)}` : activeTrack.tag} bars={previewBars} duration={duration} currentTime={currentTime} isPlaying={isPlaying} zoom={waveformZoom} normalized={peakNormalize} onSourceChange={selectPreviewSource} onTogglePlay={() => void togglePlay()} onScrub={scrubPreview} onNudge={nudgePreview} onZoom={setWaveformZoom} onNormalize={() => setPeakNormalize((value) => !value)} />}
           {activeView === "Assets" && <AssetFocusPanel assets={assetsQuery.data ?? []} authenticated={isAuthenticated} onOpenStudio={() => setActiveView("Studio")} />}
+          {activeView === "History" && <AudioSourceHistoryPanel items={sourceHistoryQuery.data ?? []} authenticated={isAuthenticated} pendingId={historyPendingId} onLogin={startLogin} onRestore={(assetId) => void restoreSourceVersion(assetId)} onDelete={(assetId) => void deleteSourceVersion(assetId)} />}
           {activeView === "Product" && <><ProductReadinessPanel onOpenPerformance={() => setActiveView("Performance")} onOpenMixer={() => setActiveView("Mixer")} onOpenStudio={() => setActiveView("Studio")} onTestPlayback={() => void togglePlay()} /><AIProjectFallbackPanel enabled={autoFallbackEnabled} status={fallbackStatus} selection={fallbackSelection} authenticated={isAuthenticated} pending={activateFallback.isPending} onToggle={() => setAutoFallbackEnabled((value) => !value)} onCreate={() => void requestProjectFallback("media-error")} /></>}
           {activeView === "Devices" && <DevicesSoundAccessPanel registrations={hardwareQuery.data ?? []} authenticated={isAuthenticated} draft={hardwareDraft} setDraft={setHardwareDraft} consentAcknowledged={soundAccessConsent} setConsentAcknowledged={setSoundAccessConsent} pending={registerHardware.isPending || activateHardware.isPending || revokeHardware.isPending} onLogin={startLogin} onRegister={submitHardwareRegistration} onActivate={activateHardwareSoundAccess} onRevoke={(registrationId) => void revokeHardware.mutateAsync({ registrationId })} />}
           {activeView === "Contact" && <ContactPanel draft={contactDraft} setDraft={setContactDraft} pending={contactSubmit.isPending} onSubmit={() => void submitContactEnquiry()} />}

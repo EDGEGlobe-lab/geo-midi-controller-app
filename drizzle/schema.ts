@@ -1,4 +1,4 @@
-import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-orm/mysql-core";
+import { int, mysqlEnum, mysqlTable, text, timestamp, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 /**
  * Core user table backing auth flow.
@@ -38,10 +38,34 @@ export const studioAssets = mysqlTable("studio_assets", {
   waveformPreview: text("waveformPreview"),
   tags: text("tags"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
+  deletedAt: timestamp("deletedAt"),
 });
 
 export type StudioAsset = typeof studioAssets.$inferSelect;
 export type InsertStudioAsset = typeof studioAssets.$inferInsert;
+
+export const activeAudioSources = mysqlTable("active_audio_sources", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id),
+  projectKey: varchar("projectKey", { length: 120 }).notNull(),
+  assetId: int("assetId").notNull().references(() => studioAssets.id),
+  restoredAt: timestamp("restoredAt").defaultNow().notNull(),
+}, (table) => ({ ownerProjectUnique: uniqueIndex("active_audio_source_owner_project_uq").on(table.ownerUserId, table.projectKey) }));
+
+export type ActiveAudioSource = typeof activeAudioSources.$inferSelect;
+export type InsertActiveAudioSource = typeof activeAudioSources.$inferInsert;
+
+export const audioSourceEvents = mysqlTable("audio_source_events", {
+  id: int("id").autoincrement().primaryKey(),
+  ownerUserId: int("ownerUserId").notNull().references(() => users.id),
+  projectKey: varchar("projectKey", { length: 120 }).notNull(),
+  assetId: int("assetId").notNull().references(() => studioAssets.id),
+  event: mysqlEnum("event", ["restored", "deleted"]).notNull(),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AudioSourceEvent = typeof audioSourceEvents.$inferSelect;
+export type InsertAudioSourceEvent = typeof audioSourceEvents.$inferInsert;
 
 export const generationJobs = mysqlTable("generation_jobs", {
   id: int("id").autoincrement().primaryKey(),

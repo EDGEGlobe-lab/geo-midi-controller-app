@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
 import { InsertUser, users } from "../drizzle/schema";
 import { ENV } from './_core/env';
@@ -93,7 +93,7 @@ export async function getUserByOpenId(openId: string) {
 
 
 import type { InsertStudioAsset, InsertGenerationJob, InsertSamplerOutput, InsertContactEnquiry, InsertHardwareRegistration, InsertHardwareConsentEvent } from "../drizzle/schema";
-import { contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, studioAssets } from "../drizzle/schema";
+import { activeAudioSources, audioSourceEvents, contactEnquiries, generationJobs, hardwareConsentEvents, hardwareRegistrations, samplerOutputs, studioAssets } from "../drizzle/schema";
 
 export async function createStudioAsset(asset: InsertStudioAsset) {
   const db = await getDb();
@@ -105,7 +105,42 @@ export async function createStudioAsset(asset: InsertStudioAsset) {
 export async function listStudioAssets(userId: number, projectKey: string) {
   const db = await getDb();
   if (!db) return [];
-  return db.select().from(studioAssets).where(and(eq(studioAssets.userId, userId), eq(studioAssets.projectKey, projectKey)));
+  return db.select().from(studioAssets).where(and(eq(studioAssets.userId, userId), eq(studioAssets.projectKey, projectKey), isNull(studioAssets.deletedAt)));
+}
+
+export async function listAudioSourceHistory(ownerUserId: number, projectKey: string) {
+  const db = await getDb();
+  if (!db) return [];
+  const [assets, active] = await Promise.all([
+    db.select().from(studioAssets).where(and(eq(studioAssets.userId, ownerUserId), eq(studioAssets.projectKey, projectKey), isNull(studioAssets.deletedAt))),
+    db.select().from(activeAudioSources).where(and(eq(activeAudioSources.ownerUserId, ownerUserId), eq(activeAudioSources.projectKey, projectKey))).limit(1),
+  ]);
+  const activeAssetId = active[0]?.assetId ?? null;
+  return assets.filter((asset) => asset.mimeType.startsWith("audio/")).sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime()).map((asset) => ({ ...asset, isActive: asset.id === activeAssetId }));
+}
+
+export async function restoreAudioSource(ownerUserId: number, projectKey: string, assetId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Audio source history is temporarily unavailable");
+  const asset = (await db.select().from(studioAssets).where(and(eq(studioAssets.id, assetId), eq(studioAssets.userId, ownerUserId), eq(studioAssets.projectKey, projectKey), isNull(studioAssets.deletedAt))).limit(1))[0];
+  if (!asset || !asset.mimeType.startsWith("audio/")) return undefined;
+  const now = new Date();
+  await db.insert(activeAudioSources).values({ ownerUserId, projectKey, assetId, restoredAt: now }).onDuplicateKeyUpdate({ set: { assetId, restoredAt: now } });
+  await db.insert(audioSourceEvents).values({ ownerUserId, projectKey, assetId, event: "restored", createdAt: now });
+  return { ...asset, isActive: true, restoredAt: now };
+}
+
+export async function deleteAudioSource(ownerUserId: number, projectKey: string, assetId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Audio source history is temporarily unavailable");
+  const active = (await db.select().from(activeAudioSources).where(and(eq(activeAudioSources.ownerUserId, ownerUserId), eq(activeAudioSources.projectKey, projectKey))).limit(1))[0];
+  if (active?.assetId === assetId) return { status: "active" as const };
+  const asset = (await db.select().from(studioAssets).where(and(eq(studioAssets.id, assetId), eq(studioAssets.userId, ownerUserId), eq(studioAssets.projectKey, projectKey), isNull(studioAssets.deletedAt))).limit(1))[0];
+  if (!asset || !asset.mimeType.startsWith("audio/")) return { status: "missing" as const };
+  const now = new Date();
+  await db.update(studioAssets).set({ deletedAt: now }).where(and(eq(studioAssets.id, assetId), eq(studioAssets.userId, ownerUserId), eq(studioAssets.projectKey, projectKey)));
+  await db.insert(audioSourceEvents).values({ ownerUserId, projectKey, assetId, event: "deleted", createdAt: now });
+  return { status: "deleted" as const, assetId, deletedAt: now };
 }
 
 export async function updateStudioAssetTags(userId: number, assetId: number, tags: string[]) {

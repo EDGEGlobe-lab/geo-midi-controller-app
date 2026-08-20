@@ -4,7 +4,7 @@ import { TRPCError } from "@trpc/server";
 import { getSessionCookieOptions } from "./_core/cookies";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
-import { activateHardwareRegistration, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, getHardwareRegistration, getUserByOpenId, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listStudioAssets, revokeHardwareRegistration, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
+import { activateHardwareRegistration, createContactEnquiry, createGenerationJob, createHardwareRegistration, createSamplerOutput, createStudioAsset, deleteAudioSource, getHardwareRegistration, getUserByOpenId, listAudioSourceHistory, listContactEnquiries, listGenerationJobs, listHardwareRegistrations, listSamplerOutputs, listStudioAssets, restoreAudioSource, revokeHardwareRegistration, updateGenerationJob, updateSamplerOutput, updateStudioAssetTags } from "./db";
 import { storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
@@ -142,6 +142,20 @@ export const appRouter = router({
         const asset = await createStudioAsset({ userId: ctx.user.id, projectKey: input.projectKey, filename: `Night Drive fallback · ${genre.label}.wav`, storageKey: NIGHT_DRIVE_FALLBACK_STORAGE_KEY, mimeType: NIGHT_DRIVE_FALLBACK_MIME_TYPE, assetType: "audio", sizeBytes: 0, durationMs: NIGHT_DRIVE_FALLBACK_DURATION_MS, waveformPreview, tags: JSON.stringify(tags) });
         const output = await createSamplerOutput({ userId: ctx.user.id, projectKey: input.projectKey, generationJobId: job.id, assetId: asset.id, outputType: "music", name: `Night Drive fallback · ${genre.label}`, durationMs: NIGHT_DRIVE_FALLBACK_DURATION_MS, waveformPreview, tags: JSON.stringify(tags) });
         return { preGenerated: true, genre, asset, output, sourceUrl: `/manus-storage/${NIGHT_DRIVE_FALLBACK_STORAGE_KEY}`, attempt: input.attempt };
+      }),
+    }),
+    sourceHistory: router({
+      list: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/) })).query(({ ctx, input }) => listAudioSourceHistory(ctx.user.id, input.projectKey)),
+      restore: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/), assetId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+        const restored = await restoreAudioSource(ctx.user.id, input.projectKey, input.assetId);
+        if (!restored) throw new TRPCError({ code: "NOT_FOUND", message: "Audio source version not found" });
+        return { ...restored, sourceUrl: `/manus-storage/${restored.storageKey}` };
+      }),
+      delete: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/), assetId: z.number().int().positive() })).mutation(async ({ ctx, input }) => {
+        const result = await deleteAudioSource(ctx.user.id, input.projectKey, input.assetId);
+        if (result.status === "active") throw new TRPCError({ code: "PRECONDITION_FAILED", message: "Restore another audio source before deleting the active version" });
+        if (result.status === "missing") throw new TRPCError({ code: "NOT_FOUND", message: "Audio source version not found" });
+        return result;
       }),
     }),
   }),

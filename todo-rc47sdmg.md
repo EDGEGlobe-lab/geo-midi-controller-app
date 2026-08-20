@@ -129,3 +129,14 @@
 - [x] Add tests for source selection, pause state, retry limits, owner-scoped asset persistence, and playback recovery, then verify typecheck, 27 tests, production build, and desktop/mobile UI.
 - [x] Publish the continuous Night Drive fallback update and request user confirmation of fallback playback.
 - [x] Extract and test fallback recovery state decisions for paused mode, retry cap, fallback-source load failure, and manual source exit.
+
+## Audio Source History and Version Lifecycle
+
+- [x] Inspect current project asset records and source-selection state for safe version-history integration.
+- [x] Add protected owner-scoped source-history, restore, and delete procedures that preserve provenance and reject cross-owner access.
+- [x] Prevent deletion of the currently restored source until another source is actively selected.
+- [x] Build an Audio Source History view with restore, delete, provenance, active-version, and empty-state controls.
+- [x] Add Vitest coverage for owner scope, active-source delete protection, restoration, and lifecycle state changes.
+- [x] Update and validate the reusable PARKWAY cloud music-studio skill with source history and version lifecycle guidance.
+- [x] Verify desktop/mobile UI, typecheck, 31 Vitest assertions, and production build.
+- [ ] Publish and deliver the source-history update and its reusable skill package.
