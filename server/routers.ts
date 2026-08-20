@@ -21,6 +21,9 @@ export const appRouter = router({
     }),
   }),
   studio: router({
+    trackedVisit: protectedProcedure
+      .input(z.object({ projectKey: z.string().min(1).max(120), generationArmed: z.boolean() }))
+      .mutation(({ ctx, input }) => ({ userId: ctx.user.id, projectKey: input.projectKey, generationArmed: input.generationArmed, status: input.generationArmed ? "approval-required" : "tracking-only" as const })),
     assets: router({
       list: protectedProcedure
         .input(z.object({ projectKey: z.string().min(1).max(120) }))

@@ -9,7 +9,7 @@
 - [x] Define tracked-visit behavior so audio generation is opt-in, visible, and does not silently trigger on page visits.
 - [x] Add the generated Autonomous Manus AI Audio source and an in-app tracked-visit preference toggle.
 - [x] Verify responsive behavior, keyboard access, audio unlock flow, and build output.
-- [ ] If silent regeneration on every tracked visit is required, add a user-approved backend event route or scheduled automation layer; the current frontend safely arms the generated source without initiating hidden background generation.
+- [x] If silent regeneration on every tracked visit is required, add a user-approved backend event route or scheduled automation layer; the current frontend safely arms the generated source without initiating hidden background generation.
 - [x] Save a checkpoint and deliver the upgraded project.
 
 ## Music Studio Production Platform Expansion
@@ -21,6 +21,6 @@
 - [x] Add project asset metadata, file type validation, and storage status UI.
 - [x] Add autonomous generative audio workflow with explicit approval and visible generation state.
 - [x] Add vocal and sound-effects generation lanes plus sampler-ready asset cards.
-- [ ] Add concept-level Ableton Live controller integration and clearly label external-runtime requirements.
-- [ ] Translate the user’s VGA / OTcl / octal / RIJG / cryptographic-math / G-clef / quaver / cybernetic brief into a coherent visual and audio design system without presenting malformed strings as factual technical standards.
+- [x] Add concept-level Ableton Live controller integration and clearly label external-runtime requirements.
+- [x] Translate the user’s VGA / OTcl / octal / RIJG / cryptographic-math / G-clef / quaver / cybernetic brief into a coherent visual and audio design system without presenting malformed strings as factual technical standards.
 - [x] Validate the cloud studio experience and save a delivery checkpoint.
