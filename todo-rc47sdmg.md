@@ -110,4 +110,22 @@
 - [x] Make sample playback, playable browser MIDI pads, and software mixer controls the primary ready-to-use product controls.
 - [x] Add a firmware/software asset-readiness panel that clearly labels product updates as local/browser assets rather than device firmware delivery.
 - [x] Add automated coverage for playback-only boundaries and asset-readiness states, then verify typecheck, 19 tests, production build, and desktop/mobile UI.
-- [ ] Publish the playback-first DAW product update and request final browser-output confirmation.
+- [x] Publish the playback-first DAW product update and request final browser-output confirmation.
+
+## User-Controlled AI Project Audio Fallback
+
+- [x] Add a visible Night Drive genre prompt index for AI project-audio fallback choices.
+- [x] Superseded by the user-selected visible continuous error-triggered model, which has an always-on/pause control and does not run as a perpetual background loop.
+- [x] Add a durable fallback-source state that can substitute for a muted sample without live capture or hardware control.
+- [x] Add tests for prompt-index selection and fallback-source boundaries; the prior approval-gate test is superseded by the visible error-triggered lifecycle.
+- [x] Superseded by the separate continuous fallback verification, publication, and user-confirmation task below.
+
+## Continuous Error-Triggered Project Audio Fallback
+
+- [x] Define the Night Drive fallback genre prompt index and a deterministic event-triggered source-selection lifecycle.
+- [x] Add a visible always-on/pause control for error-triggered replacement, with no live capture or perpetual hidden generation.
+- [x] Persist each authenticated fallback selection as a playable, tagged project asset record with provenance metadata.
+- [x] Add fallback route recovery that activates a stored project source after failed media playback and avoids replacement loops.
+- [x] Add tests for source selection, pause state, retry limits, owner-scoped asset persistence, and playback recovery, then verify typecheck, 27 tests, production build, and desktop/mobile UI.
+- [ ] Publish the continuous Night Drive fallback update and request user confirmation of fallback playback.
+- [x] Extract and test fallback recovery state decisions for paused mode, retry cap, fallback-source load failure, and manual source exit.

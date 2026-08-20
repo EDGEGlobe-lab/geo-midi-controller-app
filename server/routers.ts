@@ -8,6 +8,7 @@ import { activateHardwareRegistration, createContactEnquiry, createGenerationJob
 import { storagePut } from "./storage";
 import { ENV } from "./_core/env";
 import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
+import { fallbackAssetTags, NIGHT_DRIVE_FALLBACK_DURATION_MS, NIGHT_DRIVE_FALLBACK_MIME_TYPE, NIGHT_DRIVE_FALLBACK_STORAGE_KEY, selectNightDriveGenre } from "../shared/aiProjectFallback";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
@@ -131,6 +132,17 @@ export const appRouter = router({
       list: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120) })).query(({ ctx, input }) => listSamplerOutputs(ctx.user.id, input.projectKey)),
       create: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120), generationJobId: z.number().int().positive().nullable().optional(), assetId: z.number().int().positive().nullable().optional(), outputType: z.enum(["music", "vocal", "sfx", "motion"]), name: z.string().min(1).max(255), durationMs: z.number().int().nonnegative().nullable().optional(), waveformPreview: z.string().max(20_000).nullable().optional(), tags: z.array(z.string().min(1).max(40)).max(24).default([]) })).mutation(({ ctx, input }) => createSamplerOutput({ userId: ctx.user.id, projectKey: input.projectKey, generationJobId: input.generationJobId ?? null, assetId: input.assetId ?? null, outputType: input.outputType, name: input.name, durationMs: input.durationMs ?? null, waveformPreview: input.waveformPreview ?? null, tags: JSON.stringify(input.tags) })),
       update: protectedProcedure.input(z.object({ outputId: z.number().int().positive(), tags: z.array(z.string().min(1).max(40)).max(24).optional(), waveformPreview: z.string().max(20_000).nullable().optional() })).mutation(({ ctx, input }) => updateSamplerOutput(ctx.user.id, input.outputId, input.tags, input.waveformPreview)),
+    }),
+    fallback: router({
+      activate: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/), trigger: z.enum(["media-error", "play-rejection"]), attempt: z.number().int().min(1).max(2) })).mutation(async ({ ctx, input }) => {
+        const genre = selectNightDriveGenre();
+        const tags = fallbackAssetTags(genre, input.trigger);
+        const waveformPreview = JSON.stringify(Array.from({ length: 56 }, (_, index) => 18 + ((genre.id.charCodeAt(index % genre.id.length) * (index + 3)) % 72)));
+        const job = await createGenerationJob({ userId: ctx.user.id, projectKey: input.projectKey, jobType: "music", prompt: `${genre.prompt} [Pre-generated fallback source selected after ${input.trigger}; no new render was requested.]`, status: "completed", completedAt: new Date() });
+        const asset = await createStudioAsset({ userId: ctx.user.id, projectKey: input.projectKey, filename: `Night Drive fallback · ${genre.label}.wav`, storageKey: NIGHT_DRIVE_FALLBACK_STORAGE_KEY, mimeType: NIGHT_DRIVE_FALLBACK_MIME_TYPE, assetType: "audio", sizeBytes: 0, durationMs: NIGHT_DRIVE_FALLBACK_DURATION_MS, waveformPreview, tags: JSON.stringify(tags) });
+        const output = await createSamplerOutput({ userId: ctx.user.id, projectKey: input.projectKey, generationJobId: job.id, assetId: asset.id, outputType: "music", name: `Night Drive fallback · ${genre.label}`, durationMs: NIGHT_DRIVE_FALLBACK_DURATION_MS, waveformPreview, tags: JSON.stringify(tags) });
+        return { preGenerated: true, genre, asset, output, sourceUrl: `/manus-storage/${NIGHT_DRIVE_FALLBACK_STORAGE_KEY}`, attempt: input.attempt };
+      }),
     }),
   }),
 });
