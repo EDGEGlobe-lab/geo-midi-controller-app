@@ -156,3 +156,10 @@
 - [x] Add responsive touch, keyboard, screen-reader, reduced-motion, and visible-focus safeguards to the radio workspace.
 - [x] Add a clear code-of-conduct and privacy boundary: no hidden listener telemetry, discriminatory content targeting, client credentials, or third-party service impersonation.
 - [x] Verify radio layouts on desktop and mobile viewports alongside browser-audio user-gesture requirements; tablet reflow uses the responsive 900px layout breakpoint.
+
+## Operation-Aborted Error Recovery
+
+- [x] Trace the reported Home page operation-aborted error to a browser media play request interrupted by source replacement or load lifecycle changes.
+- [x] Treat expected media cancellation as a quiet state transition while preserving visible errors for real playback failures.
+- [x] Add regression coverage for aborted playback transitions and verify typecheck, 36 tests, production build, and the affected radio interaction.
+- [ ] Publish the abort-recovery fix and request user confirmation.

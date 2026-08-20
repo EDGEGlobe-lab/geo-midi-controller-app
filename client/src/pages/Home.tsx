@@ -9,6 +9,7 @@ import { AIProjectFallbackPanel, type FallbackSelection } from "@/components/AIP
 import { AudioSourceHistoryPanel } from "@/components/AudioSourceHistoryPanel";
 import { RadioStationPanel } from "@/components/RadioStationPanel";
 import { parkwayRadioStations } from "@shared/radioStationCatalog";
+import { isExpectedOperationAbort } from "@/lib/operationAbort";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -471,6 +472,10 @@ export default function Home() {
       setIsPlaying(true);
       setStereoStatus("ready");
     } catch (error) {
+      if (isExpectedOperationAbort(error)) {
+        setIsPlaying(false);
+        return;
+      }
       console.error(error);
       setStereoStatus("error");
       toast.error("Audio preview could not start. Enable Stereo and check the selected browser output; a fallback is reserved for failed media sources.");
@@ -518,7 +523,7 @@ export default function Home() {
     setFallbackSourceUrl(null);
     setFallbackSelection(null);
     stop();
-    if (beginPlayback) window.setTimeout(() => { if (audioRef.current) audioRef.current.volume = radioVolume / 100; void togglePlay(); }, 80);
+    if (beginPlayback) toast("Station tuned. Use the main Play control to begin the project preview.");
   };
   const changeRadioVolume = (value: number) => {
     setRadioVolume(value);
