@@ -174,3 +174,27 @@
 - [x] Add an explicit user-gesture Recover & Play path with visible Channel Rack, Mix Bus, and Stereo Out diagnostics; audible output remains pending real-device confirmation.
 - [x] Repair the stale `canActivateSoundAccess` runtime module graph by restarting the development service, then re-verify review, feedback, recovery, typecheck, 39 tests, production build, and responsive UI.
 - [ ] Publish the review, feedback, INF4, and recovery update and request real-device audio confirmation.
+
+## Manus AI Music Generator Asset Upload
+
+- [ ] Define the user-initiated AI music upload boundary, including source provenance labels and no claim that external audio was rendered by Manus unless verified.
+- [ ] Add an authenticated upload lane that validates audio file type and size, extracts duration/waveform metadata, and persists approved music as a playable project asset.
+- [ ] Add a clear Project Asset Generator surface with approval status, provenance, upload progress, playable asset selection, and error handling.
+- [ ] Add tests for authentication, MIME/size validation, provenance tags, asset persistence, and playback-source selection; verify responsive UI, typecheck, build, publish, and user playback confirmation.
+
+## Functional PARKWAY Radio Station
+
+- [x] Define a rights-respecting functional station model using only original or explicitly authorised PARKWAY audio, without relaying third-party broadcasters.
+- [x] Deliver the user-selected interactive web station, where playback and programme progression occur while a listener keeps the PARKWAY site open.
+- [x] Replace the software-display-only Radio workspace with an active programme player, station schedule, episode or track catalogue, and user-gesture playback controls.
+- [x] Keep station listening state and saved stations private to the authenticated user, with clear disclosure that browser playback is not a terrestrial broadcast or third-party service.
+- [x] Add original-audio programme-catalogue tests and verify desktop/mobile station layouts, type checking, 45 passing tests, and the production build.
+- [ ] Add station playback and catalogue tests, validate desktop and mobile operation, publish the release, and request confirmation of real-device listening.
+
+## PARKWAY Hardware Development Workspace
+
+- [x] Define consent-first local-device boundaries for ESP32, microcontroller, motherboard, memory-card-reader, and other code-development equipment; no remote flashing or physical-device control by default.
+- [x] Add a Hardware Development workspace with safe device profiles, firmware project templates, programming-code asset references, and clear local-companion requirements.
+- [x] Support user-owned project code and build instructions without storing credentials, firmware-signing keys, serial numbers, or raw removable-media contents.
+- [x] Add local-first hardware-profile boundary tests and verify desktop/mobile workbench layouts, type checking, 45 passing tests, and the production build.
+- [ ] Add boundary tests, responsive verification, publication, and an optional follow-up path for a user-authorised local companion connection.

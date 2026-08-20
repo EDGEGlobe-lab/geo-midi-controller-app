@@ -33,6 +33,37 @@ export const parkwayRadioStations = [
 
 export type ParkwayRadioStation = (typeof parkwayRadioStations)[number];
 
+/**
+ * Declared original-audio programmes for the interactive web station. The queue
+ * advances in the listener's browser only; it is not a third-party relay or a
+ * server-originated broadcast feed.
+ */
+export const parkwayRadioProgrammes = [
+  { id: "night-drive-master", stationId: "night-drive-fm", title: "Night Drive / Master Comp", creator: "PARKWAY", sourceUrl: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav", storageKey: "geo_midi_controller_deck_audio_pcm_c625e838.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "night-drive-sequence", stationId: "night-drive-fm", title: "Autonomous Sequence / 07", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-autonomous-audio_b0d36279.wav", storageKey: "parkway-autonomous-audio_b0d36279.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "pink-signal-pattern", stationId: "pink-signal-fm", title: "Pink Signal / Pattern Set", creator: "PARKWAY", sourceUrl: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", storageKey: "geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "pink-signal-interlude", stationId: "pink-signal-fm", title: "Night Drive / Pattern Interlude", creator: "PARKWAY", sourceUrl: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav", storageKey: "geo_midi_controller_deck_audio_pcm_c625e838.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "after-hours-source", stationId: "after-hours-lab", title: "After Hours / Autonomous Source", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-autonomous-audio_b0d36279.wav", storageKey: "parkway-autonomous-audio_b0d36279.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "after-hours-drift", stationId: "after-hours-lab", title: "Pink Signal / Night-Air Drift", creator: "PARKWAY", sourceUrl: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", storageKey: "geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", rightsLabel: "PARKWAY ORIGINAL" },
+] as const;
+
+export type ParkwayRadioProgramme = (typeof parkwayRadioProgrammes)[number];
+
 export function getParkwayRadioStation(stationId: string) {
   return parkwayRadioStations.find((station) => station.id === stationId);
+}
+
+export function getStationProgrammes(stationId: string) {
+  return parkwayRadioProgrammes.filter((programme) => programme.stationId === stationId);
+}
+
+export function getStationProgramme(stationId: string, programmeId: string | null) {
+  return getStationProgrammes(stationId).find((programme) => programme.id === programmeId) ?? getStationProgrammes(stationId)[0];
+}
+
+export function getAdjacentStationProgramme(stationId: string, programmeId: string | null, direction: -1 | 1) {
+  const queue = getStationProgrammes(stationId);
+  if (!queue.length) return undefined;
+  const index = Math.max(0, queue.findIndex((programme) => programme.id === programmeId));
+  return queue[(index + direction + queue.length) % queue.length];
 }

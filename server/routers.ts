@@ -169,6 +169,35 @@ export const appRouter = router({
             tags: JSON.stringify(input.tags),
           });
         }),
+      uploadManusMusic: protectedProcedure
+        .input(z.object({
+          projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/),
+          filename: z.string().min(1).max(255),
+          mimeType: z.string().min(1).max(160).regex(/^audio\/(mpeg|wav|x-wav|ogg|mp4|aac|flac)$/i, "A supported audio MIME type is required"),
+          dataBase64: z.string().min(1),
+          durationMs: z.number().int().nonnegative().max(86_400_000).nullable().optional(),
+          waveformPreview: z.string().max(20_000).nullable().optional(),
+          tags: z.array(z.string().min(1).max(40)).max(12).default([]),
+        }))
+        .mutation(async ({ ctx, input }) => {
+          const data = Buffer.from(input.dataBase64, "base64");
+          if (data.byteLength > MAX_ASSET_BYTES) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Music uploads must be 30 MB or smaller" });
+          const safeFilename = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
+          const uploaded = await storagePut(`studio/${ctx.user.id}/${input.projectKey}/manus-music/${Date.now()}-${safeFilename}`, data, input.mimeType);
+          const provenanceTags = Array.from(new Set(["manus-ai-upload", "user-approved", "source-file-supplied", ...input.tags]));
+          return createStudioAsset({
+            userId: ctx.user.id,
+            projectKey: input.projectKey,
+            filename: safeFilename,
+            storageKey: uploaded.key,
+            mimeType: input.mimeType,
+            assetType: "audio",
+            sizeBytes: data.byteLength,
+            durationMs: input.durationMs ?? null,
+            waveformPreview: input.waveformPreview ?? null,
+            tags: JSON.stringify(provenanceTags),
+          });
+        }),
     }),
     jobs: router({
       list: protectedProcedure.input(z.object({ projectKey: z.string().min(1).max(120) })).query(({ ctx, input }) => listGenerationJobs(ctx.user.id, input.projectKey)),

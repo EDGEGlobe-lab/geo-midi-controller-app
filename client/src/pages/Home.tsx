@@ -11,13 +11,15 @@ import { RadioStationPanel } from "@/components/RadioStationPanel";
 import { CompatibilityFeedbackPanel } from "@/components/CompatibilityFeedbackPanel";
 import { CompatibilityReviewPanel } from "@/components/CompatibilityReviewPanel";
 import { Inf4RadarDisplay } from "@/components/Inf4RadarDisplay";
-import { parkwayRadioStations } from "@shared/radioStationCatalog";
+import { HardwareDevelopmentPanel } from "@/components/HardwareDevelopmentPanel";
+import { getAdjacentStationProgramme, getStationProgramme, parkwayRadioStations } from "@shared/radioStationCatalog";
 import { isExpectedOperationAbort } from "@/lib/operationAbort";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
   AudioWaveform,
+  Code2,
   ChevronDown,
   CircleStop,
   Disc3,
@@ -175,7 +177,7 @@ export default function Home() {
   const [selectedTrack, setSelectedTrack] = useState("pluck");
   const [activeView, setActiveView] = useState(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Radio", "Product", "Devices", "Assets", "History", "Feedback", "Review", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
+    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Radio", "Product", "Devices", "Develop", "Assets", "History", "Feedback", "Review", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
   });
   const [showBrowser, setShowBrowser] = useState(() => window.innerWidth >= 760);
   const [tracksState, setTracksState] = useState<TrackState[]>(() => tracks.map((track) => ({ ...track, muted: false, solo: false, armed: track.id === "pluck" })));
@@ -209,6 +211,7 @@ export default function Home() {
   const [historySourceLabel, setHistorySourceLabel] = useState<string | null>(null);
   const [historyPendingId, setHistoryPendingId] = useState<number | null>(null);
   const [radioStationId, setRadioStationId] = useState("night-drive-fm");
+  const [radioProgrammeId, setRadioProgrammeId] = useState<string | null>("night-drive-master");
   const [radioVolume, setRadioVolume] = useState(82);
   const [radioActive, setRadioActive] = useState(false);
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<number | null>(null);
@@ -276,8 +279,9 @@ export default function Home() {
   const soloActive = tracksState.some((track) => track.solo);
   const previewAsset = (assetsQuery.data ?? []).find((asset) => asset.id === previewAssetId && asset.mimeType.startsWith("audio/"));
   const selectedRadioStation = parkwayRadioStations.find((station) => station.id === radioStationId) ?? parkwayRadioStations[0];
-  const previewSource = radioActive ? selectedRadioStation.sourceUrl : historySourceUrl ?? fallbackSourceUrl ?? (previewAsset ? `/manus-storage/${previewAsset.storageKey}` : activeTrack.src);
-  const previewLabel = radioActive ? `${selectedRadioStation.name} · project preview` : historySourceLabel ?? (fallbackSelection ? `Night Drive fallback · ${fallbackSelection.genre.label}` : previewAsset ? previewAsset.filename : activeTrack.label);
+  const selectedRadioProgramme = getStationProgramme(selectedRadioStation.id, radioProgrammeId);
+  const previewSource = radioActive ? (selectedRadioProgramme?.sourceUrl ?? selectedRadioStation.sourceUrl) : historySourceUrl ?? fallbackSourceUrl ?? (previewAsset ? `/manus-storage/${previewAsset.storageKey}` : activeTrack.src);
+  const previewLabel = radioActive ? `${selectedRadioStation.name} · ${selectedRadioProgramme?.title ?? selectedRadioStation.nowPlaying}` : historySourceLabel ?? (fallbackSelection ? `Night Drive fallback · ${fallbackSelection.genre.label}` : previewAsset ? previewAsset.filename : activeTrack.label);
   const previewBars = useMemo(() => {
     const bars = previewAsset ? parseWaveform(previewAsset.waveformPreview) : makeFallbackWaveform(new TextEncoder().encode(activeTrack.label), 64);
     const source = bars.length ? bars : makeFallbackWaveform(new TextEncoder().encode(previewLabel), 64);
@@ -410,10 +414,10 @@ export default function Home() {
   useEffect(() => {
     const audio = audioRef.current;
     if (!audio) return;
-    const onAudioError = () => { setChannelStatus("error"); setMixBusStatus("error"); setStereoStatus("error"); void requestProjectFallback("media-error"); };
+    const onAudioError = () => { setChannelStatus("error"); setMixBusStatus("error"); setStereoStatus("error"); if (radioActive) { setIsPlaying(false); toast.error("The current PARKWAY Radio programme could not load. Select another programme or retry playback."); return; } void requestProjectFallback("media-error"); };
     audio.addEventListener("error", onAudioError);
     return () => audio.removeEventListener("error", onAudioError);
-  }, [fallbackSourceUrl, autoFallbackEnabled, isAuthenticated]);
+  }, [fallbackSourceUrl, autoFallbackEnabled, isAuthenticated, radioActive]);
 
   useEffect(() => {
     window.localStorage.setItem("parkway-night-drive-auto-fallback", String(autoFallbackEnabled));
@@ -451,7 +455,7 @@ export default function Home() {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [currentTrackId, previewAssetId, fallbackSourceUrl, historySourceUrl, radioActive, radioStationId]);
+  }, [currentTrackId, previewAssetId, fallbackSourceUrl, historySourceUrl, radioActive, radioStationId, radioProgrammeId]);
 
   const enableStereo = async () => {
     const context = ensureAudioGraph();
@@ -552,8 +556,10 @@ export default function Home() {
     setPreviewAssetId(null);
     setCurrentTrackId(rawId as (typeof AUDIO_TRACKS)[number]["id"]);
   };
-  const selectRadioStation = (stationId: string, beginPlayback: boolean) => {
+  const selectRadioStation = (stationId: string) => {
+    const firstProgramme = getStationProgramme(stationId, null);
     setRadioStationId(stationId);
+    setRadioProgrammeId(firstProgramme?.id ?? null);
     setRadioActive(true);
     setPreviewAssetId(null);
     setHistorySourceUrl(null);
@@ -561,7 +567,31 @@ export default function Home() {
     setFallbackSourceUrl(null);
     setFallbackSelection(null);
     stop();
-    if (beginPlayback) toast("Station tuned. Use the main Play control to begin the project preview.");
+    toast("Station tuned. Press Play to start the original-audio programme.");
+  };
+  const selectRadioProgramme = (programmeId: string) => {
+    setRadioProgrammeId(programmeId);
+    setRadioActive(true);
+    setPreviewAssetId(null);
+    setHistorySourceUrl(null);
+    setHistorySourceLabel(null);
+    setFallbackSourceUrl(null);
+    setFallbackSelection(null);
+    stop();
+  };
+  const stepRadioProgramme = (direction: -1 | 1, resume = false) => {
+    const next = getAdjacentStationProgramme(selectedRadioStation.id, radioProgrammeId, direction);
+    if (!next) return;
+    selectRadioProgramme(next.id);
+    if (resume) window.setTimeout(() => void togglePlay(), 0);
+  };
+  const toggleRadioPlayback = () => {
+    if (!radioActive) {
+      selectRadioStation(radioStationId);
+      window.setTimeout(() => void togglePlay(), 0);
+      return;
+    }
+    void togglePlay();
   };
   const changeRadioVolume = (value: number) => {
     setRadioVolume(value);
@@ -664,14 +694,14 @@ export default function Home() {
 
   return (
     <main className={`parkway-app ${compactMode ? "compact-mode" : ""}`}>
-      <audio ref={audioRef} src={previewSource} preload="metadata" loop={isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); }} onError={() => toast.error(`Audio source failed to load: ${previewLabel}`)} />
+      <audio ref={audioRef} src={previewSource} preload="metadata" loop={radioActive ? false : isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); if (radioActive) stepRadioProgramme(1, true); }} onError={() => toast.error(`Audio source failed to load: ${previewLabel}`)} />
       <div className="parkway-grid" />
       <aside className={`sidebar ${showBrowser ? "sidebar-open" : "sidebar-collapsed"}`}>
         <div className="brand-lockup"><div className="brand-mark"><AudioWaveform size={19} /></div>{showBrowser && <div><div className="brand-name">PARKWAY</div><div className="brand-sub">JIG CODE / DAW</div></div>}</div>
         {showBrowser && <>
           <div className="side-label">Workspace</div>
           <nav className="side-nav">
-            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Radio", icon: Radio }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Feedback", icon: AlertTriangle }, ...(user?.role === "admin" ? [{ label: "Review", icon: ShieldCheck }] : []), { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
+            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Radio", icon: Radio }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Develop", icon: Code2 }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Feedback", icon: AlertTriangle }, ...(user?.role === "admin" ? [{ label: "Review", icon: ShieldCheck }] : []), { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
           </nav>
           <div className="side-label">Project</div>
           <div className="project-card"><div className="project-orbit"><Disc3 size={18} /></div><div className="min-w-0"><div className="project-title">Night Drive / 07</div><div className="project-meta">D major · 156 BPM</div></div><ChevronDown size={14} className="text-muted" /></div>
@@ -703,9 +733,10 @@ export default function Home() {
           {activeView === "Studio" && <MediaPreviewPlayer options={previewOptions} value={previewAsset ? `asset:${previewAsset.id}` : `track:${currentTrackId}`} label={previewLabel} detail={previewAsset ? `${previewAsset.assetType.toUpperCase()} · ${formatDuration(previewAsset.durationMs)}` : activeTrack.tag} bars={previewBars} duration={duration} currentTime={currentTime} isPlaying={isPlaying} zoom={waveformZoom} normalized={peakNormalize} onSourceChange={selectPreviewSource} onTogglePlay={() => void togglePlay()} onScrub={scrubPreview} onNudge={nudgePreview} onZoom={setWaveformZoom} onNormalize={() => setPeakNormalize((value) => !value)} />}
           {activeView === "Assets" && <AssetFocusPanel assets={assetsQuery.data ?? []} authenticated={isAuthenticated} onOpenStudio={() => setActiveView("Studio")} />}
           {activeView === "History" && <AudioSourceHistoryPanel items={sourceHistoryQuery.data ?? []} authenticated={isAuthenticated} pendingId={historyPendingId} onLogin={startLogin} onRestore={(assetId) => void restoreSourceVersion(assetId)} onDelete={(assetId) => void deleteSourceVersion(assetId)} />}
-          {activeView === "Radio" && <RadioStationPanel stations={parkwayRadioStations} selectedStationId={radioStationId} savedStationIds={(savedRadioQuery.data ?? []).map((item) => item.stationId)} authenticated={isAuthenticated} isPlaying={radioActive && isPlaying} volume={radioVolume} pending={saveRadioStation.isPending || removeRadioStation.isPending} onLogin={startLogin} onSelect={selectRadioStation} onTogglePlay={() => { if (!radioActive) selectRadioStation(radioStationId, true); else void togglePlay(); }} onVolumeChange={changeRadioVolume} onSave={(stationId) => void saveRadioStation.mutateAsync({ stationId })} onRemove={(stationId) => void removeRadioStation.mutateAsync({ stationId })} />}
+          {activeView === "Radio" && <RadioStationPanel stations={parkwayRadioStations} selectedStationId={radioStationId} selectedProgrammeId={radioProgrammeId} savedStationIds={(savedRadioQuery.data ?? []).map((item) => item.stationId)} authenticated={isAuthenticated} isPlaying={radioActive && isPlaying} volume={radioVolume} currentTime={currentTime} duration={duration} pending={saveRadioStation.isPending || removeRadioStation.isPending} onLogin={startLogin} onSelectStation={selectRadioStation} onSelectProgramme={selectRadioProgramme} onTogglePlay={toggleRadioPlayback} onPrevious={() => stepRadioProgramme(-1, radioActive && isPlaying)} onNext={() => stepRadioProgramme(1, radioActive && isPlaying)} onVolumeChange={changeRadioVolume} onSave={(stationId) => void saveRadioStation.mutateAsync({ stationId })} onRemove={(stationId) => void removeRadioStation.mutateAsync({ stationId })} />}
           {activeView === "Product" && <><ProductReadinessPanel onOpenPerformance={() => setActiveView("Performance")} onOpenMixer={() => setActiveView("Mixer")} onOpenStudio={() => setActiveView("Studio")} onTestPlayback={() => void togglePlay()} /><AIProjectFallbackPanel enabled={autoFallbackEnabled} status={fallbackStatus} selection={fallbackSelection} authenticated={isAuthenticated} pending={activateFallback.isPending} onToggle={() => setAutoFallbackEnabled((value) => !value)} onCreate={() => void requestProjectFallback("media-error")} /></>}
           {activeView === "Devices" && <DevicesSoundAccessPanel registrations={hardwareQuery.data ?? []} authenticated={isAuthenticated} draft={hardwareDraft} setDraft={setHardwareDraft} consentAcknowledged={soundAccessConsent} setConsentAcknowledged={setSoundAccessConsent} pending={registerHardware.isPending || activateHardware.isPending || revokeHardware.isPending} onLogin={startLogin} onRegister={submitHardwareRegistration} onActivate={activateHardwareSoundAccess} onRevoke={(registrationId) => void revokeHardware.mutateAsync({ registrationId })} />}
+          {activeView === "Develop" && <HardwareDevelopmentPanel onOpenStudio={() => setActiveView("Studio")} />}
           {activeView === "Feedback" && <CompatibilityFeedbackPanel pending={submitCompatibilityFeedback.isPending} onSubmit={async (draft) => { await submitCompatibilityFeedback.mutateAsync(draft); }} />}
           {activeView === "Review" && user?.role === "admin" && <CompatibilityReviewPanel reports={compatibilityReviewQuery.data ?? []} reviewers={compatibilityReviewersQuery.data ?? []} events={compatibilityHistoryQuery.data ?? []} selectedId={selectedFeedbackId} pending={assignCompatibilityReview.isPending || decideCompatibilityReview.isPending} onSelect={setSelectedFeedbackId} onAssign={(feedbackId, reviewerUserId) => void assignCompatibilityReview.mutateAsync({ feedbackId, reviewerUserId })} onDecide={(feedbackId, event) => void decideCompatibilityReview.mutateAsync({ feedbackId, event })} />}
           {activeView === "Contact" && <ContactPanel draft={contactDraft} setDraft={setContactDraft} pending={contactSubmit.isPending} onSubmit={() => void submitContactEnquiry()} />}
