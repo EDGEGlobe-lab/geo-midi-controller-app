@@ -215,3 +215,12 @@
 - [x] Keep the no-physical-transmitter and no-unlicensed-RF-reception boundary explicit while removing concept-only language from the experiential browser practice flow.
 - [x] Add source URL regression coverage, verify audio media types, run typecheck, 48 tests, production build, and desktop/mobile practice-route review.
 - [ ] Publish the audible-practice repair and request a fresh real-device stereo confirmation.
+
+## Downloadable Local-Flashing Practice Scaffolds
+
+- [x] Define ZIP package contents and safety boundaries for user-owned ESP32 and Microchip local flashing; no cloud-side flashing, serial control, secrets, or device telemetry.
+- [x] Create and publish downloadable ESP32 and Microchip project scaffold ZIP assets with README build and local-flash guidance.
+- [x] Add a hands-on browser practice workspace that simulates receiver, transport, and instrument-control states without claiming physical transmission, RF reception, or connected-device control.
+- [x] Create and validate a reusable skill for delivering safe local-flashing scaffold ZIPs and browser-based device practice environments.
+- [x] Add scaffold archive, boundary, and local practice catalogue regression coverage; verify ZIP download health, desktop/mobile UI, typecheck, 50 tests, and production build.
+- [ ] Publish the integrated scaffold and hands-on practice release, then request real-device audio confirmation.

@@ -747,11 +747,19 @@ export default function Home() {
     selectPreviewSource(`asset:${assetId}`);
     window.setTimeout(() => void togglePlay(), 0);
   };
-  const playPad = (index: number) => {
+  const playPad = async (index: number) => {
     setPressedPads((items) => Array.from(new Set([...items, index])));
     window.setTimeout(() => setPressedPads((items) => items.filter((item) => item !== index)), 140);
     const context = ensureAudioGraph();
-    if (context) { const oscillator = context.createOscillator(); const gain = context.createGain(); oscillator.frequency.value = 110 * Math.pow(2, index / 12); oscillator.type = index % 3 === 0 ? "sine" : "triangle"; gain.gain.setValueAtTime(.0001, context.currentTime); gain.gain.exponentialRampToValueAtTime(.14, context.currentTime + .01); gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .18); oscillator.connect(gain).connect(masterGainRef.current ?? context.destination); oscillator.start(); oscillator.stop(context.currentTime + .2); }
+    if (!context) return;
+    try {
+      if (context.state !== "running") await context.resume();
+      setStereoStatus("ready");
+      const oscillator = context.createOscillator(); const gain = context.createGain(); oscillator.frequency.value = 110 * Math.pow(2, index / 12); oscillator.type = index % 3 === 0 ? "sine" : "triangle"; gain.gain.setValueAtTime(.0001, context.currentTime); gain.gain.exponentialRampToValueAtTime(.14, context.currentTime + .01); gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .18); oscillator.connect(gain).connect(masterGainRef.current ?? context.destination); oscillator.start(); oscillator.stop(context.currentTime + .2);
+    } catch {
+      setStereoStatus("error");
+      toast.error("Practice pad audio is blocked. Interact with the page and try the cue again.");
+    }
   };
   const positionFromClientX = (clientX: number) => { const rect = timelineRef.current?.getBoundingClientRect(); if (!rect) return 0; return Math.max(0, Math.min(GRID_BEATS, ((clientX - rect.left) / rect.width) * GRID_BEATS)); };
   const handleTimelinePointerMove = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -806,7 +814,7 @@ export default function Home() {
           {activeView === "Radio" && <RadioStationPanel stations={parkwayRadioStations} selectedStationId={radioStationId} selectedProgrammeId={radioProgrammeId} savedStationIds={(savedRadioQuery.data ?? []).map((item) => item.stationId)} authenticated={isAuthenticated} isPlaying={radioActive && isPlaying} volume={radioVolume} currentTime={currentTime} duration={duration} pending={saveRadioStation.isPending || removeRadioStation.isPending} onLogin={startLogin} onSelectStation={startRadioPractice} onSelectProgramme={selectRadioProgramme} onTogglePlay={toggleRadioPlayback} onPrevious={() => stepRadioProgramme(-1, radioActive && isPlaying)} onNext={() => stepRadioProgramme(1, radioActive && isPlaying)} onVolumeChange={changeRadioVolume} onSave={(stationId) => void saveRadioStation.mutateAsync({ stationId})} onRemove={(stationId) => void removeRadioStation.mutateAsync({ stationId })} />}
           {activeView === "Product" && <><ProductReadinessPanel onOpenPerformance={() => setActiveView("Performance")} onOpenMixer={() => setActiveView("Mixer")} onOpenStudio={() => setActiveView("Studio")} onTestPlayback={() => void togglePlay()} /><AIProjectFallbackPanel enabled={autoFallbackEnabled} status={fallbackStatus} selection={fallbackSelection} authenticated={isAuthenticated} pending={activateFallback.isPending} onToggle={() => setAutoFallbackEnabled((value) => !value)} onCreate={() => void requestProjectFallback("media-error")} /></>}
           {activeView === "Devices" && <DevicesSoundAccessPanel registrations={hardwareQuery.data ?? []} authenticated={isAuthenticated} draft={hardwareDraft} setDraft={setHardwareDraft} consentAcknowledged={soundAccessConsent} setConsentAcknowledged={setSoundAccessConsent} pending={registerHardware.isPending || activateHardware.isPending || revokeHardware.isPending} onLogin={startLogin} onRegister={submitHardwareRegistration} onActivate={activateHardwareSoundAccess} onRevoke={(registrationId) => void revokeHardware.mutateAsync({ registrationId })} />}
-          {activeView === "Develop" && <HardwareDevelopmentPanel onOpenStudio={() => setActiveView("Studio")} />}
+          {activeView === "Develop" && <HardwareDevelopmentPanel onOpenStudio={() => setActiveView("Studio")} onRoutePracticeAudio={() => void togglePlay()} onPracticePad={() => playPad(0)} />}
           {activeView === "Feedback" && <CompatibilityFeedbackPanel pending={submitCompatibilityFeedback.isPending} onSubmit={async (draft) => { await submitCompatibilityFeedback.mutateAsync(draft); }} />}
           {activeView === "Review" && user?.role === "admin" && <CompatibilityReviewPanel reports={compatibilityReviewQuery.data ?? []} reviewers={compatibilityReviewersQuery.data ?? []} events={compatibilityHistoryQuery.data ?? []} selectedId={selectedFeedbackId} pending={assignCompatibilityReview.isPending || decideCompatibilityReview.isPending} onSelect={setSelectedFeedbackId} onAssign={(feedbackId, reviewerUserId) => void assignCompatibilityReview.mutateAsync({ feedbackId, reviewerUserId })} onDecide={(feedbackId, event) => void decideCompatibilityReview.mutateAsync({ feedbackId, event })} />}
           {activeView === "Contact" && <ContactPanel draft={contactDraft} setDraft={setContactDraft} pending={contactSubmit.isPending} onSubmit={() => void submitContactEnquiry()} />}
