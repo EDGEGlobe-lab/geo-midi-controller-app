@@ -238,3 +238,11 @@
 - [x] Add provenance, genre, date-range, and text-search controls that filter the local History view without broadening server access or changing restore/delete protections.
 - [x] Add filter regression coverage and verify desktop/iPhone History layouts; typecheck, 52 tests, and the production build pass.
 - [ ] Publish the Audio Source History filters update and request confirmation using a populated private history.
+
+## Stereo Bass Performance Calibration
+
+- [x] Inspect the browser audio graph, current master/gain-stage readouts, and reference listening constraints; retain the 45% safety floor and user-gesture unlock requirement.
+- [x] Add bounded normal-listening and bass-performance controls with transparent gain staging, display-only peak/headroom estimates, and no claim of an exact external-track match.
+- [x] Add a clearly labelled abstract signal-modulation display inspired by wave and systems language without external data ingestion, RF operation, quantum computation, or physical-device control.
+- [x] Add calibration regression coverage, verify desktop/iPhone operation, typecheck, 54 tests, and production build.
+- [ ] Publish the stereo calibration update and request device audio confirmation at the selected listening profile.

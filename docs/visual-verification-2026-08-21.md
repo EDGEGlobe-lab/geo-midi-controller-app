@@ -21,3 +21,5 @@ The Develop workspace was reviewed at 1280 × 720 and 375 × 812 after adding lo
 The iPhone 12 Pro viewport (390 × 844) was reviewed after the navigation repair. The top Menu control visibly identifies the active Develop, Arrangement, Radio, and Generator workspaces, while the closed navigation drawer no longer occupies or overlaps the interface display.
 
 The Audio Source History workspace was reviewed at desktop and iPhone 12 Pro dimensions. In the current empty owner-scoped account state, the filter area correctly remains hidden until source records exist, while the private empty-state and lifecycle boundary remain legible and contained. Filter controls are covered by component and pure-logic validation for populated private history.
+
+The Stereo Bass Performance calibration was reviewed at desktop and iPhone 12 Pro dimensions. The profile selector, reference-volume action, peak/headroom meter, local visual-only wave map, and existing recovery path remain reachable. Before playback, the browser-derived meter correctly shows an armed state rather than fabricated peak or headroom values.
