@@ -53,9 +53,9 @@ import {
 import { toast } from "sonner";
 
 const AUDIO_TRACKS = [
-  { id: "geo-render", label: "GEO Controller Render", src: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav", tag: "D MAJOR / 156 BPM" },
-  { id: "muchie-casket", label: "Muchie Pop Casket", src: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", tag: "F MINOR / 128 BPM" },
-  { id: "autonomous-project", label: "Autonomous Manus AI Audio", src: "/manus-storage/parkway-autonomous-audio_b0d36279.wav", tag: "D MAJOR / 156 BPM" },
+  { id: "geo-render", label: "Night Drive Practice Mix", src: "/manus-storage/parkway-night-drive_83138bc2.wav", tag: "D MAJOR / 156 BPM" },
+  { id: "muchie-casket", label: "Pink Signal Practice Mix", src: "/manus-storage/parkway-pink-signal_905c45de.mp3", tag: "F MINOR / 128 BPM" },
+  { id: "autonomous-project", label: "After Hours Practice Mix", src: "/manus-storage/parkway-after-hours_fbfee4d1.mp3", tag: "D MAJOR / 156 BPM" },
 ] as const;
 
 type TrackBase = { id: string; name: string; type: "audio" | "midi"; color: string; preset: string; level: number; pan: number; clipStart: number; clipLength: number };
@@ -462,7 +462,7 @@ export default function Home() {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-  }, [currentTrackId, previewAssetId, fallbackSourceUrl, historySourceUrl, radioActive, radioStationId, radioProgrammeId]);
+  }, [currentTrackId, previewAssetId, fallbackSourceUrl, historySourceUrl]);
 
   const enableStereo = async () => {
     const context = ensureAudioGraph();
@@ -576,7 +576,39 @@ export default function Home() {
     stop();
     toast("Station tuned. Press Play to start the original-audio programme.");
   };
+  const startRadioPractice = async (stationId: string) => {
+    const firstProgramme = getStationProgramme(stationId, null);
+    const audio = audioRef.current;
+    if (!firstProgramme || !audio) { toast.error("The selected practice programme is unavailable."); return; }
+    setRadioStationId(stationId);
+    setRadioProgrammeId(firstProgramme.id);
+    setRadioActive(true);
+    setPreviewAssetId(null);
+    setHistorySourceUrl(null);
+    setHistorySourceLabel(null);
+    setFallbackSourceUrl(null);
+    setFallbackSelection(null);
+    audio.pause();
+    audio.src = firstProgramme.sourceUrl;
+    audio.load();
+    setCurrentTime(0);
+    setDuration(0);
+    setIsPlaying(false);
+    try {
+      if (!await enableStereo()) return;
+      await audio.play();
+      setIsPlaying(true);
+      setStereoStatus("ready");
+      toast.success(`Practice session started: ${firstProgramme.title}`);
+    } catch (error) {
+      if (isExpectedOperationAbort(error)) { setIsPlaying(false); return; }
+      setStereoStatus("error");
+      toast.error("Practice playback could not start. Use Recover & Play, then choose the station again.");
+    }
+  };
   const selectRadioProgramme = (programmeId: string) => {
+    const programme = getStationProgramme(selectedRadioStation.id, programmeId);
+    const audio = audioRef.current;
     setRadioProgrammeId(programmeId);
     setRadioActive(true);
     setPreviewAssetId(null);
@@ -584,7 +616,14 @@ export default function Home() {
     setHistorySourceLabel(null);
     setFallbackSourceUrl(null);
     setFallbackSelection(null);
-    stop();
+    if (audio && programme) {
+      audio.pause();
+      audio.src = programme.sourceUrl;
+      audio.load();
+      setCurrentTime(0);
+      setDuration(0);
+      setIsPlaying(false);
+    }
   };
   const stepRadioProgramme = (direction: -1 | 1, resume = false) => {
     const next = getAdjacentStationProgramme(selectedRadioStation.id, radioProgrammeId, direction);
@@ -754,7 +793,7 @@ export default function Home() {
 
           {activeView === "Performance" && <section className="performance-panel panel"><div className="panel-header"><div><div className="section-kicker"><Zap size={13} /> Performance / hardware pads</div><h2>Jig pad bank <span className="muted-slash">/</span> <span>{midiStatus}</span></h2></div><div className="panel-header-actions"><span className="small-pill"><span className="status-light" /> {midiInputs.length ? midiInputs[0] : "Browser MIDI"}</span></div></div><div className="performance-body"><div className="pad-grid">{PERFORMANCE_PADS.map((pad, index) => <button key={pad} className={`performance-pad pad-${index % 6} ${pressedPads.includes(index) ? "is-pressed" : ""}`} onPointerDown={() => playPad(index)} onClick={() => setMidiMap((mapping) => ({ ...mapping, [36 + index]: index }))}><span>{String(index + 1).padStart(2, "0")}</span><strong>{pad}</strong><small>{midiMap[36 + index] === index ? "MAPPED" : `NOTE ${36 + index}`}</small></button>)}</div><div className="performance-side"><div className="performance-readout"><span className="transport-caption">MIDI ROUTING</span><strong>{midiInputs.length ? "LIVE INPUT" : "CLICK TO PLAY"}</strong><small>Click a pad to map note {36 + (pressedPads[0] ?? 0)}. External MIDI notes light the same pad.</small></div><button className="outline-button" onClick={() => toast(midiInputs.length ? `${midiInputs.length} MIDI input${midiInputs.length > 1 ? "s" : ""} listening` : "Connect a MIDI controller to enable hardware input")}><Headphones size={14} /> Check hardware</button></div></div></section>}
 
-          <Inf4RadarDisplay active={isPlaying} stationLabel={previewLabel} />
+          {activeView !== "Radio" && <Inf4RadarDisplay active={isPlaying} stationLabel={previewLabel} />}
           <section className="arrangement-panel panel"><div className="panel-header"><div><div className="section-kicker"><AudioWaveform size={13} /> Arrangement / 16 bars</div><h2>Night Drive <span className="muted-slash">/</span> <span>Master comp</span></h2></div><div className="panel-header-actions"><span className="small-pill"><span className="status-light" /> {activeCount} active</span><button className="icon-button"><MoreIcon /></button></div></div><div className="timeline-ruler"><span />{Array.from({ length: 16 }).map((_, i) => <div key={i} className={i + 1 === activeBar ? "ruler-active" : ""}>{String(i + 1).padStart(2, "0")}</div>)}</div><div className="loop-editor"><span>LOOP</span><div className="loop-track"><div className="loop-fill" style={{ left: `${(loopRegion.start / GRID_BEATS) * 100}%`, width: `${((loopRegion.end - loopRegion.start) / GRID_BEATS) * 100}%` }} /><button className="loop-handle loop-handle-start" style={{ left: `${(loopRegion.start / GRID_BEATS) * 100}%` }} aria-label="Move loop start" onPointerDown={(event) => { event.stopPropagation(); setDraggingHandle("start"); }} /><button className="loop-handle loop-handle-end" style={{ left: `${(loopRegion.end / GRID_BEATS) * 100}%` }} aria-label="Move loop end" onPointerDown={(event) => { event.stopPropagation(); setDraggingHandle("end"); }} /></div><strong>{String(loopRegion.start).padStart(2, "0")} — {String(loopRegion.end).padStart(2, "0")} bars</strong></div><div ref={timelineRef} className="timeline-grid" onPointerMove={handleTimelinePointerMove} onPointerUp={() => { setDraggingHandle(null); setDraggingClip(null); }} onPointerLeave={() => { setDraggingHandle(null); setDraggingClip(null); }}>{tracksState.map((track, index) => <div key={track.id} className={`timeline-row ${selectedTrack === track.id ? "row-selected" : ""}`} onClick={() => setSelectedTrack(track.id)}><div className={`track-label label-${track.color}`}><div className="track-icon">{track.type === "midi" ? <Grid3X3 size={13} /> : <AudioWaveform size={13} />}</div><div className="track-copy"><strong>{track.name}</strong><span>{track.type.toUpperCase()} · {track.preset}</span></div></div><div className="clip-lane"><div className={`clip clip-${track.color}`} style={{ left: `${track.clipStart}%`, width: `${track.clipLength}%` }} onPointerDown={(event) => { event.stopPropagation(); setSelectedTrack(track.id); setDraggingClip(track.id); }}><span>{index === 0 ? "INTRO / TAKE 03" : index === 1 ? "SUB PULSE" : index === 2 ? "HOOK A" : index === 3 ? "HARMONY" : index === 4 ? "AIR BED" : "TEXTURE"}</span><Waveform color={track.color} seed={index + 2} active={isPlaying && selectedTrack === track.id} /></div>{index < 4 && <div className={`clip clip-${track.color} clip-secondary`} style={{ left: `${62 + index * 2}%`, width: `${20 + (index % 3) * 5}%` }} onPointerDown={(event) => { event.stopPropagation(); setSelectedTrack(track.id); setDraggingClip(track.id); }}><Waveform color={track.color} seed={index + 7} /></div>}</div></div>)}<div className="playhead" style={{ left: `${4 + (activeBar - 1) * 6.12}%` }}><span /></div></div><div className="timeline-footer"><span>01:00</span><span>02:00</span><span>03:00</span><span>04:00</span><span className="footer-hint">Drag clips to arrange · click a lane to inspect</span></div></section>
 
           <div className="lower-grid"><section className="mixer-panel panel"><div className="panel-header"><div><div className="section-kicker"><SlidersHorizontal size={13} /> Channel rack / software mixer</div><h2>Mix bus <span className="muted-slash">/</span> <span>{soloActive ? `${soloedIds.length} soloed` : "Stereo out"}</span></h2></div><button className="outline-button outline-small" onClick={() => setTracksState(tracks.map((track) => ({ ...track, muted: false, solo: false, armed: false })))}><Power size={13} /> Reset</button></div><div className="mixer-list">{tracksState.map((track) => <div key={track.id} className={`mixer-row ${track.muted ? "is-muted" : ""} ${selectedTrack === track.id ? "mixer-selected" : ""}`} onClick={() => setSelectedTrack(track.id)}><div className={`mixer-name name-${track.color}`}><span className="channel-number">{String(tracksState.indexOf(track) + 1).padStart(2, "0")}</span><div><strong>{track.name}</strong><span>{track.type.toUpperCase()}</span></div></div><div className="mini-meter"><Meter active={isPlaying && !track.muted} accent={track.color} level={meterLevels[track.id] ?? 0} /><EqDisplay bands={selectedTrack === track.id ? eqBands : eqBands.map((band) => band * 0.35)} accent={track.color} /></div><div className="mixer-level"><input aria-label={`${track.name} level`} type="range" min="0" max="100" value={track.level} onChange={(event) => updateTrack(track.id, { level: Number(event.target.value) })} className={`range-${track.color}`} /><span>{track.level}</span></div><div className="mixer-actions"><button className={`mix-button ${track.muted ? "is-on" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { muted: !track.muted }); }}>M</button><button className={`mix-button ${track.solo ? "is-solo" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { solo: !track.solo }); }}>S</button><button aria-label={`Toggle software cue for ${track.name}; live recording is not provided`} title="Software cue only — no live recording" className={`mix-button ${track.armed ? "is-armed" : ""}`} onClick={(event) => { event.stopPropagation(); updateTrack(track.id, { armed: !track.armed }); }}><Headphones size={12} /></button></div></div>)}</div></section>
@@ -764,7 +803,7 @@ export default function Home() {
           {activeView === "Generator" && <ManusMusicUploadPanel authenticated={isAuthenticated} pending={uploadingManusMusic || uploadManusMusic.isPending} uploadStage={manusUploadStage} assets={assetsQuery.data ?? []} onLogin={startLogin} onUpload={(file) => void handleManusMusicUpload(file)} onPlay={playManusMusicAsset} />}
           {activeView === "Assets" && <AssetFocusPanel assets={assetsQuery.data ?? []} authenticated={isAuthenticated} onOpenStudio={() => setActiveView("Studio")} />}
           {activeView === "History" && <AudioSourceHistoryPanel items={sourceHistoryQuery.data ?? []} authenticated={isAuthenticated} pendingId={historyPendingId} onLogin={startLogin} onRestore={(assetId) => void restoreSourceVersion(assetId)} onDelete={(assetId) => void deleteSourceVersion(assetId)} />}
-          {activeView === "Radio" && <RadioStationPanel stations={parkwayRadioStations} selectedStationId={radioStationId} selectedProgrammeId={radioProgrammeId} savedStationIds={(savedRadioQuery.data ?? []).map((item) => item.stationId)} authenticated={isAuthenticated} isPlaying={radioActive && isPlaying} volume={radioVolume} currentTime={currentTime} duration={duration} pending={saveRadioStation.isPending || removeRadioStation.isPending} onLogin={startLogin} onSelectStation={selectRadioStation} onSelectProgramme={selectRadioProgramme} onTogglePlay={toggleRadioPlayback} onPrevious={() => stepRadioProgramme(-1, radioActive && isPlaying)} onNext={() => stepRadioProgramme(1, radioActive && isPlaying)} onVolumeChange={changeRadioVolume} onSave={(stationId) => void saveRadioStation.mutateAsync({ stationId })} onRemove={(stationId) => void removeRadioStation.mutateAsync({ stationId })} />}
+          {activeView === "Radio" && <RadioStationPanel stations={parkwayRadioStations} selectedStationId={radioStationId} selectedProgrammeId={radioProgrammeId} savedStationIds={(savedRadioQuery.data ?? []).map((item) => item.stationId)} authenticated={isAuthenticated} isPlaying={radioActive && isPlaying} volume={radioVolume} currentTime={currentTime} duration={duration} pending={saveRadioStation.isPending || removeRadioStation.isPending} onLogin={startLogin} onSelectStation={startRadioPractice} onSelectProgramme={selectRadioProgramme} onTogglePlay={toggleRadioPlayback} onPrevious={() => stepRadioProgramme(-1, radioActive && isPlaying)} onNext={() => stepRadioProgramme(1, radioActive && isPlaying)} onVolumeChange={changeRadioVolume} onSave={(stationId) => void saveRadioStation.mutateAsync({ stationId})} onRemove={(stationId) => void removeRadioStation.mutateAsync({ stationId })} />}
           {activeView === "Product" && <><ProductReadinessPanel onOpenPerformance={() => setActiveView("Performance")} onOpenMixer={() => setActiveView("Mixer")} onOpenStudio={() => setActiveView("Studio")} onTestPlayback={() => void togglePlay()} /><AIProjectFallbackPanel enabled={autoFallbackEnabled} status={fallbackStatus} selection={fallbackSelection} authenticated={isAuthenticated} pending={activateFallback.isPending} onToggle={() => setAutoFallbackEnabled((value) => !value)} onCreate={() => void requestProjectFallback("media-error")} /></>}
           {activeView === "Devices" && <DevicesSoundAccessPanel registrations={hardwareQuery.data ?? []} authenticated={isAuthenticated} draft={hardwareDraft} setDraft={setHardwareDraft} consentAcknowledged={soundAccessConsent} setConsentAcknowledged={setSoundAccessConsent} pending={registerHardware.isPending || activateHardware.isPending || revokeHardware.isPending} onLogin={startLogin} onRegister={submitHardwareRegistration} onActivate={activateHardwareSoundAccess} onRevoke={(registrationId) => void revokeHardware.mutateAsync({ registrationId })} />}
           {activeView === "Develop" && <HardwareDevelopmentPanel onOpenStudio={() => setActiveView("Studio")} />}

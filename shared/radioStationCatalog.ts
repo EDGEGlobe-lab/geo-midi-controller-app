@@ -5,8 +5,8 @@ export const parkwayRadioStations = [
     tagline: "Underground techno after dark",
     genres: ["Underground techno", "Electro"],
     nowPlaying: "Night Drive / Master Comp",
-    sourceUrl: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav",
-    storageKey: "geo_midi_controller_deck_audio_pcm_c625e838.wav",
+    sourceUrl: "/manus-storage/parkway-night-drive_83138bc2.wav",
+    storageKey: "parkway-night-drive_83138bc2.wav",
     accent: "cyan",
   },
   {
@@ -15,8 +15,8 @@ export const parkwayRadioStations = [
     tagline: "Leftfield hooks and pulse patterns",
     genres: ["Synth pulse", "Leftfield electronic"],
     nowPlaying: "Pink Signal / Pattern Set",
-    sourceUrl: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav",
-    storageKey: "geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav",
+    sourceUrl: "/manus-storage/parkway-pink-signal_905c45de.mp3",
+    storageKey: "parkway-pink-signal_905c45de.mp3",
     accent: "pink",
   },
   {
@@ -25,8 +25,8 @@ export const parkwayRadioStations = [
     tagline: "Minimal motion and night-air beds",
     genres: ["Minimal", "Ambient motion"],
     nowPlaying: "After Hours / Autonomous Source",
-    sourceUrl: "/manus-storage/parkway-autonomous-audio_b0d36279.wav",
-    storageKey: "parkway-autonomous-audio_b0d36279.wav",
+    sourceUrl: "/manus-storage/parkway-after-hours_fbfee4d1.mp3",
+    storageKey: "parkway-after-hours_fbfee4d1.mp3",
     accent: "violet",
   },
 ] as const;
@@ -39,12 +39,12 @@ export type ParkwayRadioStation = (typeof parkwayRadioStations)[number];
  * server-originated broadcast feed.
  */
 export const parkwayRadioProgrammes = [
-  { id: "night-drive-master", stationId: "night-drive-fm", title: "Night Drive / Master Comp", creator: "PARKWAY", sourceUrl: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav", storageKey: "geo_midi_controller_deck_audio_pcm_c625e838.wav", rightsLabel: "PARKWAY ORIGINAL" },
-  { id: "night-drive-sequence", stationId: "night-drive-fm", title: "Autonomous Sequence / 07", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-autonomous-audio_b0d36279.wav", storageKey: "parkway-autonomous-audio_b0d36279.wav", rightsLabel: "PARKWAY ORIGINAL" },
-  { id: "pink-signal-pattern", stationId: "pink-signal-fm", title: "Pink Signal / Pattern Set", creator: "PARKWAY", sourceUrl: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", storageKey: "geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", rightsLabel: "PARKWAY ORIGINAL" },
-  { id: "pink-signal-interlude", stationId: "pink-signal-fm", title: "Night Drive / Pattern Interlude", creator: "PARKWAY", sourceUrl: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav", storageKey: "geo_midi_controller_deck_audio_pcm_c625e838.wav", rightsLabel: "PARKWAY ORIGINAL" },
-  { id: "after-hours-source", stationId: "after-hours-lab", title: "After Hours / Autonomous Source", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-autonomous-audio_b0d36279.wav", storageKey: "parkway-autonomous-audio_b0d36279.wav", rightsLabel: "PARKWAY ORIGINAL" },
-  { id: "after-hours-drift", stationId: "after-hours-lab", title: "Pink Signal / Night-Air Drift", creator: "PARKWAY", sourceUrl: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", storageKey: "geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "night-drive-master", stationId: "night-drive-fm", title: "Night Drive / Master Comp", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-night-drive_83138bc2.wav", storageKey: "parkway-night-drive_83138bc2.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "night-drive-sequence", stationId: "night-drive-fm", title: "Autonomous Sequence / 07", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-after-hours_fbfee4d1.mp3", storageKey: "parkway-after-hours_fbfee4d1.mp3", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "pink-signal-pattern", stationId: "pink-signal-fm", title: "Pink Signal / Pattern Set", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-pink-signal_905c45de.mp3", storageKey: "parkway-pink-signal_905c45de.mp3", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "pink-signal-interlude", stationId: "pink-signal-fm", title: "Night Drive / Pattern Interlude", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-night-drive_83138bc2.wav", storageKey: "parkway-night-drive_83138bc2.wav", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "after-hours-source", stationId: "after-hours-lab", title: "After Hours / Autonomous Source", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-after-hours_fbfee4d1.mp3", storageKey: "parkway-after-hours_fbfee4d1.mp3", rightsLabel: "PARKWAY ORIGINAL" },
+  { id: "after-hours-drift", stationId: "after-hours-lab", title: "Pink Signal / Night-Air Drift", creator: "PARKWAY", sourceUrl: "/manus-storage/parkway-pink-signal_905c45de.mp3", storageKey: "parkway-pink-signal_905c45de.mp3", rightsLabel: "PARKWAY ORIGINAL" },
 ] as const;
 
 export type ParkwayRadioProgramme = (typeof parkwayRadioProgrammes)[number];

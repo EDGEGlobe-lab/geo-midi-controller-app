@@ -7,7 +7,7 @@ describe("PARKWAY interactive radio catalogue", () => {
     parkwayRadioProgrammes.forEach((programme) => {
       expect(programme.creator).toBe("PARKWAY");
       expect(programme.rightsLabel).toBe("PARKWAY ORIGINAL");
-      expect(programme.sourceUrl).toMatch(/^\/manus-storage\//);
+      expect(programme.sourceUrl).toMatch(/^\/manus-storage\/.+\.(wav|mp3)$/);
       expect(parkwayRadioStations.some((station) => station.id === programme.stationId)).toBe(true);
     });
   });

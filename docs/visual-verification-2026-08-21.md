@@ -11,3 +11,7 @@ The Manus AI Music Generator lane was reviewed at 1280 × 720 and 375 × 812. It
 The same desktop and mobile layouts were rechecked after adding staged file-read, media-analysis, upload, stored, and error states. The progress treatment is hidden until a user begins an upload, while explicit `MANUS UPLOAD`, `USER APPROVED`, and `SOURCE FILE` badges render only on stored generator assets.
 
 Reliability review at the desktop viewport confirmed that both the initial Arrangement route and the Generator route render their shared transport, stereo recovery rail, sidebar navigation, and the respective workspace state without layout regressions after private data loading was deferred by workspace.
+
+The revised Radio workspace was reviewed at 1280 × 720 and 375 × 812. The user-initiated `START` station controls, practice-session transport, programme queue, original-audio disclosure, and no-physical-RF boundary are visible without clipping in both layouts.
+
+After the final radio-route adjustment, desktop and mobile review confirmed that the abstract transmitter display is absent from the active Radio workspace. The original-audio practice session is now the focal playback surface while the rest of the DAW workspace remains available for mixer and transport practice.

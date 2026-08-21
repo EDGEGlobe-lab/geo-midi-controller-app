@@ -207,3 +207,11 @@
 - [x] Address confirmed reliability and performance faults with focused code changes that preserve user-initiated audio, original-audio station boundaries, provenance, and local-only device controls.
 - [x] Add deferred-workspace query and post-upload asset-confirmation regression coverage; verify typecheck, 48 tests, production build, and desktop workspace routes.
 - [ ] Publish the reliability repair and request real-device confirmation of radio and uploaded-asset playback.
+
+## Audible Practice Environment Repair
+
+- [x] Reproduce the muted stereo and inaudible PARKWAY Radio behaviour in the browser and inspect the media source, Web Audio graph, autoplay state, and programme transport lifecycle.
+- [x] Repair the user-gesture stereo unlock and original-audio Radio practice-session playback path so audible in-browser listening is the central outcome, not a display-only concept.
+- [x] Keep the no-physical-transmitter and no-unlicensed-RF-reception boundary explicit while removing concept-only language from the experiential browser practice flow.
+- [x] Add source URL regression coverage, verify audio media types, run typecheck, 48 tests, production build, and desktop/mobile practice-route review.
+- [ ] Publish the audible-practice repair and request a fresh real-device stereo confirmation.
