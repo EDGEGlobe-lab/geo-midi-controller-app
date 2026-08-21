@@ -1,6 +1,27 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+/* iPhone navigation: a contained, scrollable drawer with an always-visible workspace trigger. */
+.mobile-nav-scrim { display: none; }
+@media (max-width: 760px) {
+  .mobile-nav-scrim { display: block !important; position: fixed !important; inset: 0 !important; z-index: 30 !important; border: 0 !important; background: rgba(0, 6, 10, .62) !important; backdrop-filter: blur(2px); }
+  .sidebar { z-index: 31 !important; width: min(86vw, 320px) !important; max-width: 320px !important; padding: max(18px, env(safe-area-inset-top)) 14px max(14px, env(safe-area-inset-bottom)) !important; overflow-y: auto !important; overscroll-behavior: contain !important; -webkit-overflow-scrolling: touch; }
+  .sidebar.sidebar-open { transform: translateX(0) !important; }
+  .sidebar.sidebar-collapsed { transform: translateX(-110%) !important; pointer-events: none !important; }
+  .sidebar .side-label { margin-top: 16px !important; }
+  .sidebar .side-nav { gap: 4px !important; padding-bottom: 12px !important; }
+  .sidebar .side-link { min-height: 42px !important; padding: 11px 10px !important; font-size: 12px !important; }
+  .sidebar .project-card, .sidebar .library-list, .sidebar .side-label-row, .sidebar .sidebar-footer { display: none !important; }
+  .sidebar-toggle { position: sticky !important; bottom: 0 !important; margin-top: 8px !important; min-height: 42px !important; background: #0b161c !important; }
+  .topbar { position: sticky !important; top: 0 !important; z-index: 20 !important; min-height: max(52px, env(safe-area-inset-top)) !important; padding-top: env(safe-area-inset-top) !important; background: rgba(7, 14, 20, .97) !important; }
+  .mobile-menu { display: inline-flex !important; align-items: center !important; gap: 6px !important; min-height: 34px !important; padding: 6px 8px !important; border: 1px solid rgba(85,230,255,.28) !important; border-radius: 6px !important; color: #dffcff !important; background: rgba(85,230,255,.08) !important; font: 8px "IBM Plex Mono", monospace !important; }
+  .mobile-menu strong { color: var(--cyan) !important; font: 8px "IBM Plex Mono", monospace !important; }
+  .breadcrumb { display: none !important; }
+  .top-actions { gap: 5px !important; }
+  .top-actions .icon-button { width: 30px !important; height: 30px !important; }
+  .workspace { min-width: 0 !important; }
+  .content-scroll { overflow-x: clip !important; }
+}
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {

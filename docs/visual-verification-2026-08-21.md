@@ -17,3 +17,5 @@ The revised Radio workspace was reviewed at 1280 × 720 and 375 × 812. The user
 After the final radio-route adjustment, desktop and mobile review confirmed that the abstract transmitter display is absent from the active Radio workspace. The original-audio practice session is now the focal playback surface while the rest of the DAW workspace remains available for mixer and transport practice.
 
 The Develop workspace was reviewed at 1280 × 720 and 375 × 812 after adding local-flashing ZIP packages and the hands-on browser practice module. ESP32 and Microchip download cards, browser-audio cue controls, practice-pad feedback control, build-checklist action, local-only boundary, source editor, and the existing local-file download remain visible and correctly stacked at both viewports.
+
+The iPhone 12 Pro viewport (390 × 844) was reviewed after the navigation repair. The top Menu control visibly identifies the active Develop, Arrangement, Radio, and Generator workspaces, while the closed navigation drawer no longer occupies or overlaps the interface display.

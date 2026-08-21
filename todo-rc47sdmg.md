@@ -224,3 +224,10 @@
 - [x] Create and validate a reusable skill for delivering safe local-flashing scaffold ZIPs and browser-based device practice environments.
 - [x] Add scaffold archive, boundary, and local practice catalogue regression coverage; verify ZIP download health, desktop/mobile UI, typecheck, 50 tests, and production build.
 - [ ] Publish the integrated scaffold and hands-on practice release, then request real-device audio confirmation.
+
+## iPhone 12 Pro Navigation Repair
+
+- [x] Inspect the active-menu and sidebar layout at the iPhone 12 Pro viewport to identify why navigation intrudes into the studio workspace or becomes unavailable.
+- [x] Implement a contained mobile navigation pattern with a clear active-workspace label, tap-safe controls, and no overlap with DAW transport or workspace content.
+- [x] Verify Arrangement, Develop, Radio, and Generator views at iPhone 12 Pro dimensions, then run typecheck, 50 tests, and the production build.
+- [ ] Publish the iPhone navigation repair and request device confirmation.
