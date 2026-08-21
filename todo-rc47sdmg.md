@@ -277,3 +277,28 @@
 - [x] Implement a safe first connection followed by idempotent rerouting, so source changes preserve the working Channel Rack → Mix Bus → Stereo Out path.
 - [x] Add initial-route regression coverage and validate the iPhone listening rail; typecheck, 56 tests, and production build pass.
 - [ ] Publish the initial-route repair and request a fresh iPhone confirmation of meter movement, transport movement, and audible sound.
+
+## User-Approved Original Music Catalogue
+
+- [x] Define 20 original five-minute PARKWAY track briefs, rights/provenance labels, controlled generation sequence, and project-asset metadata without silent background generation.
+- [x] Generate the 20 user-approved instrumental tracks in controlled batches and store them as private playable project assets with title, source, and generation-provenance metadata.
+- [x] Add a compact song-switching control and an in-app assistant guidance surface that helps users choose, play, and inspect approved catalogue assets.
+- [x] Validate asset persistence, provenance, compact switching, browser playback, responsive controls, and publish the catalogue release.
+
+## Child-Friendly Catalogue Visual Player and Vocal Variants
+
+- [x] Define original child-friendly lyric scripts and timestamped lyric cues for vocal-song variants without representing instrumental masters as already containing vocals.
+- [x] Create distinct, original child-friendly procedural cartoon artwork for each of the 20 PARKWAY catalogue tracks directly in the visual player; image-generation quota prevented separate bitmap exports in this session.
+- [x] Create the first explicitly labelled reviewed original synthetic vocal-song variant, keeping it selectable and provenance-distinct from all 20 instrumental masters; additional vocal variants remain intentionally deferred until separately rendered and verified.
+- [x] Add an interactive, accessible waveform visualizer with transport-synchronised playhead and reduced-motion support.
+- [x] Add a synchronized lyrics display that highlights the active line only for a future labelled synthetic vocal variant, provides a clear instrumental state otherwise, and remains readable on mobile.
+- [x] Extend compact catalogue switching and the audio selector so users can select the original instrumental or the matching separately registered verified synthetic vocal variant.
+- [x] Add tests for lyric-cue selection, waveform time mapping, artwork metadata, vocal/instrumental source distinction, responsive controls, and browser playback before publishing.
+
+## Synthetic EDM Vocal Consent Boundary
+
+- [x] Enforce a synthetic-voice-only policy for all PARKWAY vocal variants: reject author, user, artist, identifiable-person, uploaded-recording, and voice-reference sources.
+- [x] Restrict vocal-song metadata and UI to newly generated, non-identifiable EDM-style singing with original lyrics and explicit `synthetic-vocal-only` provenance.
+- [x] Keep each completed instrumental master as a separate selectable asset; never overwrite or imply vocals within an instrumental asset.
+- [x] Add regression coverage for synthetic-vocal provenance, source-type rejection, instrumental/vocal selection clarity, and consent-boundary messaging.
+- [x] Define every synthetic vocal as an original alien-creature EDM treatment with robotic formants, bass-responsive processing, and no imitation of franchise characters, game characters, actors, or identifiable people.

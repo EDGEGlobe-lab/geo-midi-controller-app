@@ -10,10 +10,16 @@ import { ENV } from "./_core/env";
 import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
 import { fallbackAssetTags, NIGHT_DRIVE_FALLBACK_DURATION_MS, NIGHT_DRIVE_FALLBACK_MIME_TYPE, NIGHT_DRIVE_FALLBACK_STORAGE_KEY, selectNightDriveGenre } from "../shared/aiProjectFallback";
 import { getParkwayRadioStation } from "../shared/radioStationCatalog";
+import { catalogueAssetTags, catalogueWaveformPreview, PARKWAY_CATALOGUE_PROJECT_KEY, parkwayCatalogue, parkwaySyntheticVocalVariants, syntheticVocalVariantAssetTags } from "../shared/parkwayCatalogue";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
 const supportedMime = /^(audio\/|video\/|image\/|application\/json$|application\/octet-stream$)/i;
+const systemSyntheticVocalTags = new Set(["synthetic-vocal-variant", "synthetic-vocal-only", "non-identifiable-voice", "no-human-voice-source", "alien-creature-edm-voice", "robotic-formant-structure", "bass-responsive-effects", "no-voice-reference-or-cloning", "original-lyrics", "no-franchise-imitation"]);
+const assertUserAssetRespectsSyntheticVoicePolicy = (assetType: "audio" | "vocal" | "sfx" | "sample" | "motion" | "image" | "other", tags: string[]) => {
+  if (assetType === "vocal") throw new TRPCError({ code: "FORBIDDEN", message: "PARKWAY vocal variants are restricted to verified original synthetic voices; personal, uploaded, or reference voices are not accepted" });
+  if (tags.some((tag) => systemSyntheticVocalTags.has(tag))) throw new TRPCError({ code: "FORBIDDEN", message: "Synthetic-vocal provenance tags are server-controlled and reserved for verified original generated variants" });
+};
 const contactEnquirySchema = z.object({
   name: z.string().trim().min(2).max(160),
   email: z.string().trim().email().max(320),
@@ -138,7 +144,67 @@ export const appRouter = router({
       list: protectedProcedure
         .input(z.object({ projectKey: z.string().min(1).max(120) }))
         .query(({ ctx, input }) => listStudioAssets(ctx.user.id, input.projectKey)),
-      updateTags: protectedProcedure.input(z.object({ assetId: z.number().int().positive(), tags: z.array(z.string().min(1).max(40)).max(24) })).mutation(({ ctx, input }) => updateStudioAssetTags(ctx.user.id, input.assetId, input.tags)),
+      registerParkwayCatalogue: protectedProcedure
+        .input(z.object({ projectKey: z.literal(PARKWAY_CATALOGUE_PROJECT_KEY) }).strict())
+        .mutation(async ({ ctx, input }) => {
+          const existing = await listStudioAssets(ctx.user.id, input.projectKey);
+          const existingKeys = new Set(existing.map((asset) => asset.storageKey));
+          const created = [];
+          const skipped = [];
+          for (const track of parkwayCatalogue) {
+            if (existingKeys.has(track.storageKey)) {
+              skipped.push(track.id);
+              continue;
+            }
+            const asset = await createStudioAsset({
+              userId: ctx.user.id,
+              projectKey: input.projectKey,
+              filename: `${track.number.toString().padStart(2, "0")} · ${track.title}.wav`,
+              storageKey: track.storageKey,
+              mimeType: "audio/wav",
+              assetType: "audio",
+              sizeBytes: 0,
+              durationMs: track.durationMs,
+              waveformPreview: catalogueWaveformPreview(track),
+              tags: JSON.stringify(catalogueAssetTags(track)),
+            });
+            created.push(asset);
+          }
+          return { created, skipped, total: parkwayCatalogue.length };
+        }),
+      registerParkwaySyntheticVocals: protectedProcedure
+        .input(z.object({ projectKey: z.literal(PARKWAY_CATALOGUE_PROJECT_KEY) }).strict())
+        .mutation(async ({ ctx, input }) => {
+          const existing = await listStudioAssets(ctx.user.id, input.projectKey);
+          const existingKeys = new Set(existing.map((asset) => asset.storageKey));
+          const created = [];
+          const skipped = [];
+          for (const variant of parkwaySyntheticVocalVariants) {
+            const track = parkwayCatalogue.find((item) => item.id === variant.trackId);
+            if (!track) continue;
+            if (existingKeys.has(variant.storageKey)) {
+              skipped.push(variant.trackId);
+              continue;
+            }
+            created.push(await createStudioAsset({
+              userId: ctx.user.id,
+              projectKey: input.projectKey,
+              filename: `${track.number.toString().padStart(2, "0")} · ${track.title} · Synthetic Vocal Variant.wav`,
+              storageKey: variant.storageKey,
+              mimeType: "audio/wav",
+              assetType: "vocal",
+              sizeBytes: 0,
+              durationMs: variant.durationMs,
+              waveformPreview: catalogueWaveformPreview(track),
+              tags: JSON.stringify(syntheticVocalVariantAssetTags(track)),
+            }));
+          }
+          return { created, skipped, total: parkwaySyntheticVocalVariants.length };
+        }),
+      updateTags: protectedProcedure.input(z.object({ assetId: z.number().int().positive(), tags: z.array(z.string().min(1).max(40)).max(24) })).mutation(({ ctx, input }) => {
+        assertUserAssetRespectsSyntheticVoicePolicy("audio", input.tags);
+        return updateStudioAssetTags(ctx.user.id, input.assetId, input.tags);
+      }),
       upload: protectedProcedure
         .input(z.object({
           projectKey: z.string().min(1).max(120).regex(/^[a-zA-Z0-9_-]+$/),
@@ -151,6 +217,7 @@ export const appRouter = router({
           tags: z.array(z.string().min(1).max(40)).max(24).default([]),
         }))
         .mutation(async ({ ctx, input }) => {
+          assertUserAssetRespectsSyntheticVoicePolicy(input.assetType, input.tags);
           const data = Buffer.from(input.dataBase64, "base64");
           if (data.byteLength > MAX_ASSET_BYTES) throw new Error("Asset exceeds the 30 MB upload limit");
           if (!supportedMime.test(input.mimeType) && input.assetType !== "other") throw new Error("Unsupported asset MIME type");
@@ -180,6 +247,7 @@ export const appRouter = router({
           tags: z.array(z.string().min(1).max(40)).max(12).default([]),
         }))
         .mutation(async ({ ctx, input }) => {
+          assertUserAssetRespectsSyntheticVoicePolicy("audio", input.tags);
           const data = Buffer.from(input.dataBase64, "base64");
           if (data.byteLength > MAX_ASSET_BYTES) throw new TRPCError({ code: "PAYLOAD_TOO_LARGE", message: "Music uploads must be 30 MB or smaller" });
           const safeFilename = input.filename.replace(/[^a-zA-Z0-9._-]/g, "_");
