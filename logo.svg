@@ -1,103 +1,91 @@
-<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+<?xml version="1.0" encoding="UTF-8"?>
+<svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" width="200" height="200">
   <defs>
-    <!-- Gradients for neon effects -->
-    <radialGradient id="neonGreenGlow" cx="35%" cy="35%">
-      <stop offset="0%" style="stop-color:#39FF14;stop-opacity:1" />
-      <stop offset="50%" style="stop-color:#00FF00;stop-opacity:0.8" />
-      <stop offset="100%" style="stop-color:#00AA00;stop-opacity:0.6" />
-    </radialGradient>
-    
-    <radialGradient id="neonBlueShinny" cx="40%" cy="40%">
-      <stop offset="0%" style="stop-color:#00FFFF;stop-opacity:1" />
-      <stop offset="60%" style="stop-color:#0099FF;stop-opacity:0.9" />
-      <stop offset="100%" style="stop-color:#0055AA;stop-opacity:0.7" />
-    </radialGradient>
-    
-    <radialGradient id="sparkleShine" cx="30%" cy="30%">
-      <stop offset="0%" style="stop-color:#FFFFFF;stop-opacity:1" />
-      <stop offset="100%" style="stop-color:#FFFFFF;stop-opacity:0" />
-    </radialGradient>
-    
-    <!-- Glow filter for neon effect -->
-    <filter id="neonGlow">
-      <feGaussianBlur stdDeviation="2" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
-    
-    <filter id="intensiveGlow">
-      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-      <feMerge>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="coloredBlur"/>
-        <feMergeNode in="SourceGraphic"/>
-      </feMerge>
-    </filter>
+    <style>
+      .neon-green { fill: #39FF14; }
+      .neon-blue { fill: #00FFFF; }
+      .neon-cyan { fill: #00FFFF; }
+      .dark-bg { fill: #0A0E27; }
+      .white-shine { fill: #FFFFFF; }
+      .black-pupil { fill: #000000; }
+    </style>
   </defs>
   
-  <!-- Background -->
-  <rect width="200" height="200" fill="#0A0E27" />
+  <!-- Dark Background -->
+  <rect width="200" height="200" class="dark-bg"/>
   
-  <!-- Main blueberry body with neon green -->
-  <circle cx="100" cy="110" r="65" fill="url(#neonGreenGlow)" filter="url(#neonGlow)" />
+  <!-- Main Blueberry Body - Neon Green Solid -->
+  <circle cx="100" cy="110" r="65" class="neon-green" opacity="0.95"/>
   
-  <!-- Blueberry depth shading -->
-  <ellipse cx="100" cy="75" rx="55" ry="35" fill="#00FF00" opacity="0.3" filter="url(#neonGlow)" />
+  <!-- Blueberry Depth Shading -->
+  <ellipse cx="100" cy="75" rx="55" ry="35" class="neon-green" opacity="0.4"/>
   
-  <!-- Left eye white base -->
-  <circle cx="75" cy="95" r="18" fill="#1a1a2e" />
+  <!-- Blueberry Gloss/Shine Effect -->
+  <ellipse cx="85" cy="70" rx="25" ry="20" class="white-shine" opacity="0.25"/>
   
-  <!-- Right eye white base -->
-  <circle cx="125" cy="95" r="18" fill="#1a1a2e" />
+  <!-- Left Eye Socket (Dark Background) -->
+  <circle cx="75" cy="95" r="18" fill="#1a1a2e" opacity="0.9"/>
   
-  <!-- Left neon blue eye (iris) -->
-  <circle cx="75" cy="95" r="13" fill="url(#neonBlueShinny)" filter="url(#intensiveGlow)" />
+  <!-- Right Eye Socket (Dark Background) -->
+  <circle cx="125" cy="95" r="18" fill="#1a1a2e" opacity="0.9"/>
   
-  <!-- Right neon blue eye (iris) -->
-  <circle cx="125" cy="95" r="13" fill="url(#neonBlueShinny)" filter="url(#intensiveGlow)" />
+  <!-- Left Eye Iris - Neon Blue Solid -->
+  <circle cx="75" cy="95" r="13" class="neon-blue" opacity="0.95"/>
   
-  <!-- Left pupil -->
-  <circle cx="76" cy="96" r="8" fill="#000000" />
+  <!-- Right Eye Iris - Neon Blue Solid -->
+  <circle cx="125" cy="95" r="13" class="neon-blue" opacity="0.95"/>
   
-  <!-- Right pupil -->
-  <circle cx="126" cy="96" r="8" fill="#000000" />
+  <!-- Left Eye Pupil -->
+  <circle cx="76" cy="96" r="8" class="black-pupil"/>
   
-  <!-- Left eye sparkle shine (upper left) -->
-  <circle cx="70" cy="88" r="5" fill="url(#sparkleShine)" filter="url(#neonGlow)" />
+  <!-- Right Eye Pupil -->
+  <circle cx="126" cy="96" r="8" class="black-pupil"/>
   
-  <!-- Right eye sparkle shine (upper left) -->
-  <circle cx="120" cy="88" r="5" fill="url(#sparkleShine)" filter="url(#neonGlow)" />
+  <!-- Left Eye White Sparkle (Large) -->
+  <circle cx="70" cy="88" r="5" class="white-shine" opacity="0.95"/>
   
-  <!-- Left eye smaller sparkle -->
-  <circle cx="78" cy="92" r="2.5" fill="#FFFFFF" opacity="0.9" filter="url(#neonGlow)" />
+  <!-- Right Eye White Sparkle (Large) -->
+  <circle cx="120" cy="88" r="5" class="white-shine" opacity="0.95"/>
   
-  <!-- Right eye smaller sparkle -->
-  <circle cx="128" cy="92" r="2.5" fill="#FFFFFF" opacity="0.9" filter="url(#neonGlow)" />
+  <!-- Left Eye Small Sparkle -->
+  <circle cx="78" cy="92" r="2.5" class="white-shine" opacity="1"/>
   
-  <!-- Decorative sparkle stars around the blueberry -->
-  <!-- Star 1 (top right) -->
+  <!-- Right Eye Small Sparkle -->
+  <circle cx="128" cy="92" r="2.5" class="white-shine" opacity="1"/>
+  
+  <!-- Star Sparkle 1 - Top Right (Cyan) -->
   <g transform="translate(155, 60)">
-    <polygon points="0,-6 1.5,-2 6,-1.5 3,1.5 4,6 0,3 -4,6 -3,1.5 -6,-1.5 -1.5,-2" fill="#00FFFF" opacity="0.8" filter="url(#neonGlow)" />
+    <polygon points="0,-6 1.5,-2 6,-1.5 3,1.5 4,6 0,3 -4,6 -3,1.5 -6,-1.5 -1.5,-2" class="neon-cyan" opacity="0.9"/>
   </g>
   
-  <!-- Star 2 (bottom left) -->
+  <!-- Star Sparkle 2 - Bottom Left (Cyan) -->
   <g transform="translate(45, 155)">
-    <polygon points="0,-5 1,-1.5 5,-1 2.5,1.5 3.5,5 0,2.5 -3.5,5 -2.5,1.5 -5,-1 -1,-1.5" fill="#00FFFF" opacity="0.7" filter="url(#neonGlow)" />
+    <polygon points="0,-5 1,-1.5 5,-1 2.5,1.5 3.5,5 0,2.5 -3.5,5 -2.5,1.5 -5,-1 -1,-1.5" class="neon-cyan" opacity="0.8"/>
   </g>
   
-  <!-- Star 3 (top left) -->
+  <!-- Star Sparkle 3 - Top Left (Cyan) -->
   <g transform="translate(50, 65)">
-    <polygon points="0,-4 0.8,-1 4,-0.8 1.8,1 2.5,4 0,1.8 -2.5,4 -1.8,1 -4,-0.8 -0.8,-1" fill="#00FFFF" opacity="0.6" filter="url(#neonGlow)" />
+    <polygon points="0,-4 0.8,-1 4,-0.8 1.8,1 2.5,4 0,1.8 -2.5,4 -1.8,1 -4,-0.8 -0.8,-1" class="neon-cyan" opacity="0.7"/>
   </g>
   
-  <!-- Star 4 (bottom right) -->
+  <!-- Star Sparkle 4 - Bottom Right (Green) -->
   <g transform="translate(150, 150)">
-    <polygon points="0,-5.5 1.2,-1.8 5.5,-1.5 2.8,1.8 3.8,5.5 0,2.8 -3.8,5.5 -2.8,1.8 -5.5,-1.5 -1.2,-1.8" fill="#39FF14" opacity="0.7" filter="url(#neonGlow)" />
+    <polygon points="0,-5.5 1.2,-1.8 5.5,-1.5 2.8,1.8 3.8,5.5 0,2.8 -3.8,5.5 -2.8,1.8 -5.5,-1.5 -1.2,-1.8" class="neon-green" opacity="0.8"/>
   </g>
   
-  <!-- Glow outline for entire blueberry -->
-  <circle cx="100" cy="110" r="68" fill="none" stroke="#39FF14" stroke-width="1.5" opacity="0.5" filter="url(#neonGlow)" />
-  <circle cx="100" cy="110" r="70" fill="none" stroke="#00FF00" stroke-width="0.5" opacity="0.3" />
+  <!-- Additional Small Sparkles for Extra Shimmer -->
+  <!-- Sparkle Dot 1 -->
+  <circle cx="140" cy="80" r="2" class="neon-cyan" opacity="0.7"/>
+  
+  <!-- Sparkle Dot 2 -->
+  <circle cx="60" cy="140" r="2" class="neon-cyan" opacity="0.6"/>
+  
+  <!-- Sparkle Dot 3 -->
+  <circle cx="170" cy="120" r="1.5" class="neon-green" opacity="0.8"/>
+  
+  <!-- Outer Glow Ring 1 -->
+  <circle cx="100" cy="110" r="68" fill="none" stroke="#39FF14" stroke-width="1" opacity="0.4"/>
+  
+  <!-- Outer Glow Ring 2 -->
+  <circle cx="100" cy="110" r="70" fill="none" stroke="#00FF00" stroke-width="0.5" opacity="0.2"/>
 </svg>
