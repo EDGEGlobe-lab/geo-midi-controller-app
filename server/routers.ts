@@ -10,6 +10,7 @@ import { ENV } from "./_core/env";
 import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSION } from "./hardwareAccess";
 import { fallbackAssetTags, NIGHT_DRIVE_FALLBACK_DURATION_MS, NIGHT_DRIVE_FALLBACK_MIME_TYPE, NIGHT_DRIVE_FALLBACK_STORAGE_KEY, selectNightDriveGenre } from "../shared/aiProjectFallback";
 import { getParkwayRadioStation } from "../shared/radioStationCatalog";
+import { fetchGitHubRepositorySnapshot } from "./integrations/githubRepositorySignals";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
@@ -50,6 +51,12 @@ export const appRouter = router({
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
       return { success: true } as const;
     }),
+  }),
+  github: router({
+    repositorySnapshot: publicProcedure.query(() => fetchGitHubRepositorySnapshot(
+      { owner: "EDGEGlobe-lab", repository: "geo-midi-controller-app" },
+      { token: ENV.githubToken || undefined },
+    )),
   }),
   contact: router({
     submit: publicProcedure.input(contactEnquirySchema).mutation(async ({ input }) => {

@@ -64,6 +64,7 @@ The logo features:
 - 🌙 **Dark-Mode UI** — Neo-industrial Signal Laboratory design system with lucid dream enhancements
 - 📱 **Responsive Layout** — Master bus-first layout optimized for studio workflows
 - 🧠 **AI Motion Intelligence** — Auto-Lucid dream world animations
+- 🔍 **Repository Observability** — Read-only GitHub REST signals plus cycle-detection utilities; see [repository observability documentation](./docs/repository-observability.md)
 
 ## Design System
 
