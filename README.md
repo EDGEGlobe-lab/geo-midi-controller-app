@@ -1,5 +1,9 @@
 # GEO MIDI Controller App
 
+<div align="center">
+  <img src="./logo.svg" alt="GEO MIDI Controller App Logo" width="150" height="150" style="margin: 20px 0;" />
+</div>
+
 A standalone deployable audio controller deck with bundled playback, transport controls, visual meters, and advanced multi-track mixing channels for the GEO electronic music system.
 
 **Built with [Manus](https://manus.build)** — a modern full-stack framework combining React, Express, TypeScript, and Drizzle ORM.
