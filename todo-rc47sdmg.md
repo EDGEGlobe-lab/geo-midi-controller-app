@@ -231,3 +231,10 @@
 - [x] Implement a contained mobile navigation pattern with a clear active-workspace label, tap-safe controls, and no overlap with DAW transport or workspace content.
 - [x] Verify Arrangement, Develop, Radio, and Generator views at iPhone 12 Pro dimensions, then run typecheck, 50 tests, and the production build.
 - [ ] Publish the iPhone navigation repair and request device confirmation.
+
+## Audio Source History Filters
+
+- [x] Inspect owner-scoped audio source history metadata to identify safe provenance, genre, creation-date, and text-search fields.
+- [x] Add provenance, genre, date-range, and text-search controls that filter the local History view without broadening server access or changing restore/delete protections.
+- [x] Add filter regression coverage and verify desktop/iPhone History layouts; typecheck, 52 tests, and the production build pass.
+- [ ] Publish the Audio Source History filters update and request confirmation using a populated private history.
