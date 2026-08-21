@@ -29,3 +29,5 @@ The built-in speaker repair was reviewed at the iPhone 12 Pro viewport. The top 
 The follow-up output diagnosis control was reviewed at the iPhone 12 Pro viewport. Test Output is visibly available beside Enable Stereo and Built-in Speaker Play, making it possible to check the same post-mix output route and meter independently of loaded media playback.
 
 The Stereo In routing repair was reviewed at the iPhone 12 Pro viewport. The listening rail now displays the distinct four-stage `IN → CH → BUS → OUT` path without disrupting the master control, recovery actions, or compact mobile layout.
+
+The safe initial-route follow-up was reviewed at the iPhone 12 Pro viewport. The listening rail remains contained, exposes the direct Test Output action, and retains the distinct Stereo In route-health stage before playback begins.

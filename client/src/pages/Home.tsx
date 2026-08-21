@@ -3,6 +3,7 @@ import { startLogin } from "@/const";
 import { trpc } from "@/lib/trpc";
 import { clampMasterVolume } from "@/lib/audioSafety";
 import { BASS_PROFILES, browserStereoMeter, formatMeterDb, isBassProfileId, type BassProfileId, type StereoMeter } from "@/lib/stereoCalibration";
+import { shouldReconnectStereoIn } from "@/lib/stereoInRouting";
 import { clearFallbackForManualSource, decideFallbackRecovery } from "@/lib/fallbackRecovery";
 import { DevicesSoundAccessPanel, type HardwareDraft } from "@/components/DevicesSoundAccessPanel";
 import { ProductReadinessPanel } from "@/components/ProductReadinessPanel";
@@ -161,6 +162,7 @@ export default function Home() {
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
   const stereoInRef = useRef<GainNode | null>(null);
+  const stereoInRouteRef = useRef<string | null>(null);
   const mixBusRef = useRef<GainNode | null>(null);
   const previewGainRef = useRef<GainNode | null>(null);
   const previewPanRef = useRef<StereoPannerNode | null>(null);
@@ -399,14 +401,18 @@ export default function Home() {
     const node = trackNodesRef.current[trackId];
     if (!stereoIn || !node || !mixBusRef.current || !outputAnalyserRef.current) { setStereoInStatus("error"); setChannelStatus("error"); setMixBusStatus("error"); return false; }
     try {
-      stereoIn.disconnect();
-      stereoIn.connect(node.gain);
+      if (shouldReconnectStereoIn(stereoInRouteRef.current, trackId)) {
+        if (stereoInRouteRef.current) stereoIn.disconnect();
+        stereoIn.connect(node.gain);
+        stereoInRouteRef.current = trackId;
+      }
       setStereoInStatus("ready");
       setChannelStatus("ready");
       setMixBusStatus("ready");
       return true;
     } catch (error) {
       console.error("[Audio] Channel Rack route recovery failed", error);
+      stereoInRouteRef.current = null;
       setStereoInStatus("error");
       setChannelStatus("error");
       setMixBusStatus("error");

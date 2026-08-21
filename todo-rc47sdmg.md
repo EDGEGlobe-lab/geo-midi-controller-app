@@ -270,3 +270,10 @@
 - [x] Surface Stereo In route health separately from Mix Bus and Stereo Out, preserving the 50% minimum listening floor and built-in-speaker recovery action.
 - [x] Add graph and meter regression coverage, validate the mobile listening rail, typecheck, 54 tests, and production build.
 - [ ] Publish the Stereo In repair and request iPhone confirmation that Test Output moves the meter and produces sound.
+
+## Initial Stereo In Connection Repair
+
+- [x] Confirm and guard the initial Stereo In disconnect condition that can reject the first Channel Rack connection and set every route-health stage to error.
+- [x] Implement a safe first connection followed by idempotent rerouting, so source changes preserve the working Channel Rack → Mix Bus → Stereo Out path.
+- [x] Add initial-route regression coverage and validate the iPhone listening rail; typecheck, 56 tests, and production build pass.
+- [ ] Publish the initial-route repair and request a fresh iPhone confirmation of meter movement, transport movement, and audible sound.
