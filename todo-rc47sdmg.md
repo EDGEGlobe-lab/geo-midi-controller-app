@@ -246,3 +246,11 @@
 - [x] Add a clearly labelled abstract signal-modulation display inspired by wave and systems language without external data ingestion, RF operation, quantum computation, or physical-device control.
 - [x] Add calibration regression coverage, verify desktop/iPhone operation, typecheck, 54 tests, and production build.
 - [ ] Publish the stereo calibration update and request device audio confirmation at the selected listening profile.
+
+## Built-in Speaker Playback Repair
+
+- [x] Reproduce the silent browser/iPhone playback state and inspect source attachment, Channel Rack routing, Mix Bus, post-mix analysis, media element state, and user-gesture recovery.
+- [x] Make Channel Rack → Mix Bus → Stereo Out routing idempotent and resilient across source changes, with a post-mix analyser that reflects the signal sent toward the browser output.
+- [x] Enforce a 50% minimum listening floor, and provide a distinct built-in-speaker recovery action that does not require headphones or external speaker hardware.
+- [x] Add route and meter regression coverage, verify mobile controls, typecheck, 54 tests, and production build.
+- [ ] Publish the routing repair and request iPhone built-in-speaker confirmation.

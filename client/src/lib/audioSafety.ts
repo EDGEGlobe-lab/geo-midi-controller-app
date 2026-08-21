@@ -1,4 +1,4 @@
-export const MASTER_VOLUME_FLOOR = 45;
+export const MASTER_VOLUME_FLOOR = 50;
 
 export function clampMasterVolume(value: number): number {
   if (!Number.isFinite(value)) return MASTER_VOLUME_FLOOR;

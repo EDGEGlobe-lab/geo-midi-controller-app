@@ -137,7 +137,7 @@ function ContactPanel({ draft, setDraft, pending, onSubmit }: { draft: ContactDr
 }
 
 function StereoControl({ master, status, channel, mixBus, compact, profile, meter, onEnable, onRecover, onMasterChange, onProfileChange, onReferenceVolume, onCompactToggle }: { master: number; status: "locked" | "ready" | "error"; channel: "idle" | "ready" | "error"; mixBus: "idle" | "ready" | "error"; compact: boolean; profile: BassProfileId; meter: StereoMeter; onEnable: () => void; onRecover: () => void; onMasterChange: (value: number) => void; onProfileChange: (value: BassProfileId) => void; onReferenceVolume: () => void; onCompactToggle: () => void }) {
-  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><button className="stereo-recover" onClick={onRecover}><Play size={13} fill="currentColor" /><span>RECOVER & PLAY</span></button><div className="route-health" aria-label={`Channel Rack ${channel}; Mix Bus ${mixBus}; Stereo Out ${status}`}><span className={`route-${channel}`}>CH</span><i /> <span className={`route-${mixBus}`}>BUS</span><i /> <span className={`route-${status}`}>OUT</span></div><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 45 percent" type="range" min="45" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><div className="stereo-performance"><span>LOCAL BASS PERFORMANCE</span><select aria-label="Bass performance profile" value={profile} onChange={(event) => { if (isBassProfileId(event.target.value)) onProfileChange(event.target.value); }}>{Object.entries(BASS_PROFILES).map(([id, option]) => <option key={id} value={id}>{option.label}</option>)}</select><button className="stereo-reference" onClick={onReferenceVolume}>SET {BASS_PROFILES[profile].referenceVolume}%</button><div className="stereo-meter-readout"><span>PEAK <strong>{formatMeterDb(meter.peakDb)}</strong></span><span>HEADROOM <strong>{formatMeterDb(meter.headroomDb)}</strong></span><em>Browser signal estimate · not speaker loudness</em></div><div className="stereo-signal-map" aria-label="Abstract local wave modulation display"><span style={{ height: `${26 + meter.lowEnergy * 42}%` }} /><span style={{ height: `${46 + meter.lowEnergy * 30}%` }} /><span style={{ height: `${30 + meter.lowEnergy * 48}%` }} /><span style={{ height: `${52 + meter.lowEnergy * 24}%` }} /><span style={{ height: `${34 + meter.lowEnergy * 40}%` }} /><small>LOCAL WAVE MAP · DISPLAY ONLY</small></div></div><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
+  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><button className="stereo-recover" onClick={onRecover}><Play size={13} fill="currentColor" /><span>BUILT-IN SPEAKER PLAY</span></button><div className="route-health" aria-label={`Channel Rack ${channel}; Mix Bus ${mixBus}; Stereo Out ${status}`}><span className={`route-${channel}`}>CH</span><i /> <span className={`route-${mixBus}`}>BUS</span><i /> <span className={`route-${status}`}>OUT</span></div><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 50 percent" type="range" min="50" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><div className="stereo-performance"><span>LOCAL BASS PERFORMANCE</span><select aria-label="Bass performance profile" value={profile} onChange={(event) => { if (isBassProfileId(event.target.value)) onProfileChange(event.target.value); }}>{Object.entries(BASS_PROFILES).map(([id, option]) => <option key={id} value={id}>{option.label}</option>)}</select><button className="stereo-reference" onClick={onReferenceVolume}>SET {BASS_PROFILES[profile].referenceVolume}%</button><div className="stereo-meter-readout"><span>POST-MIX PEAK <strong>{formatMeterDb(meter.peakDb)}</strong></span><span>HEADROOM <strong>{formatMeterDb(meter.headroomDb)}</strong></span><em>Browser signal estimate · not speaker loudness</em></div><div className="stereo-signal-map" aria-label="Abstract local wave modulation display"><span style={{ height: `${26 + meter.lowEnergy * 42}%` }} /><span style={{ height: `${46 + meter.lowEnergy * 30}%` }} /><span style={{ height: `${30 + meter.lowEnergy * 48}%` }} /><span style={{ height: `${52 + meter.lowEnergy * 24}%` }} /><span style={{ height: `${34 + meter.lowEnergy * 40}%` }} /><small>LOCAL WAVE MAP · DISPLAY ONLY</small></div></div><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
 }
 
 type AssetFocusItem = { id: number; filename: string; assetType: string; durationMs: number | null; tags: string | null };
@@ -159,11 +159,13 @@ export default function Home() {
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<MediaElementAudioSourceNode | null>(null);
   const masterGainRef = useRef<GainNode | null>(null);
+  const mixBusRef = useRef<GainNode | null>(null);
   const previewGainRef = useRef<GainNode | null>(null);
   const previewPanRef = useRef<StereoPannerNode | null>(null);
   const normalizerRef = useRef<DynamicsCompressorNode | null>(null);
   const bassShelfRef = useRef<BiquadFilterNode | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
+  const outputAnalyserRef = useRef<AnalyserNode | null>(null);
   const analysisFrameRef = useRef<number | null>(null);
   const trackNodesRef = useRef<Record<string, { gain: GainNode; pan: StereoPannerNode }>>({});
   const fallbackAttemptsRef = useRef(0);
@@ -336,15 +338,20 @@ export default function Home() {
       const context = new AudioContextCtor();
       const source = context.createMediaElementSource(audioRef.current);
       const analyser = context.createAnalyser();
+      const outputAnalyser = context.createAnalyser();
       const normalizer = context.createDynamicsCompressor();
       const bassShelf = context.createBiquadFilter();
       const previewGain = context.createGain();
       const masterGain = context.createGain();
+      const mixBus = context.createGain();
       audioRef.current.muted = false;
       audioRef.current.volume = 1;
       analyser.fftSize = 256;
       analyser.smoothingTimeConstant = 0.78;
+      outputAnalyser.fftSize = 512;
+      outputAnalyser.smoothingTimeConstant = 0.78;
       masterGain.gain.value = clampMasterVolume(master) / 100;
+      mixBus.gain.value = 1;
       normalizer.threshold.value = 0;
       normalizer.knee.value = 0;
       normalizer.ratio.value = 1;
@@ -354,13 +361,15 @@ export default function Home() {
       bassShelf.frequency.value = BASS_PROFILES[bassProfile].frequencyHz;
       bassShelf.gain.value = BASS_PROFILES[bassProfile].bassDb;
       previewGain.gain.value = BASS_PROFILES[bassProfile].preamp;
-      analyser.connect(normalizer).connect(bassShelf).connect(previewGain).connect(masterGain).connect(context.destination);
+      analyser.connect(mixBus).connect(normalizer).connect(bassShelf).connect(previewGain).connect(masterGain).connect(outputAnalyser).connect(context.destination);
       sourceNodeRef.current = source;
       analyserRef.current = analyser;
+      outputAnalyserRef.current = outputAnalyser;
       normalizerRef.current = normalizer;
       bassShelfRef.current = bassShelf;
       previewGainRef.current = previewGain;
       masterGainRef.current = masterGain;
+      mixBusRef.current = mixBus;
       audioContextRef.current = context;
       context.onstatechange = () => setStereoStatus(context.state === "running" ? "ready" : "locked");
       tracksState.forEach((track) => {
@@ -380,7 +389,7 @@ export default function Home() {
   function routeSourceToTrack(trackId: string) {
     const source = sourceNodeRef.current;
     const node = trackNodesRef.current[trackId];
-    if (!source || !node) { setChannelStatus("error"); return false; }
+    if (!source || !node || !mixBusRef.current || !outputAnalyserRef.current) { setChannelStatus("error"); setMixBusStatus("error"); return false; }
     try {
       source.disconnect();
       source.connect(node.gain);
@@ -453,14 +462,15 @@ export default function Home() {
   }, [autoFallbackEnabled]);
 
   useEffect(() => {
-    if (!isPlaying || !analyserRef.current) return;
+    if (!isPlaying || !analyserRef.current || !outputAnalyserRef.current) return;
     const analyser = analyserRef.current;
+    const outputAnalyser = outputAnalyserRef.current;
     const frequencyData = new Uint8Array(analyser.frequencyBinCount);
-    const timeData = new Float32Array(analyser.fftSize);
+    const timeData = new Float32Array(outputAnalyser.fftSize);
     const bands = 8;
     const draw = () => {
       analyser.getByteFrequencyData(frequencyData);
-      analyser.getFloatTimeDomainData(timeData);
+      outputAnalyser.getFloatTimeDomainData(timeData);
       const nextBands = Array.from({ length: bands }, (_, index) => {
         const start = Math.floor((index / bands) * frequencyData.length);
         const end = Math.max(start + 1, Math.floor(((index + 1) / bands) * frequencyData.length));
@@ -498,8 +508,9 @@ export default function Home() {
       if (!routeSourceToTrack(selectedTrack)) throw new Error("Active Channel Rack route is unavailable");
       const activeNode = trackNodesRef.current[selectedTrack];
       if (activeNode) activeNode.gain.gain.setTargetAtTime(Math.max(0.01, (tracksState.find((track) => track.id === selectedTrack)?.level ?? 70) / 100), context.currentTime, 0.015);
+      setMaster((current) => Math.max(50, current));
       setStereoStatus("ready");
-      toast.success("Stereo output enabled. Master level is protected at 45% or above.");
+      toast.success("Stereo output enabled for the built-in speaker route. Master listening floor is 50%.");
       return true;
     } catch (error) {
       console.error(error);
@@ -540,12 +551,13 @@ export default function Home() {
         const level = tracksState.find((track) => track.id === trackId)?.level ?? 70;
         node.gain.gain.setTargetAtTime(Math.max(0.01, level / 100), context.currentTime, 0.01);
       });
-      masterGainRef.current?.gain.setTargetAtTime(clampMasterVolume(master) / 100, context.currentTime, 0.01);
+      masterGainRef.current?.gain.setTargetAtTime(Math.max(50, clampMasterVolume(master)) / 100, context.currentTime, 0.01);
       audio.muted = false;
       audio.volume = radioActive ? radioVolume / 100 : 1;
       await audio.play();
       setChannelStatus("ready"); setMixBusStatus("ready"); setStereoStatus("ready"); setIsPlaying(true);
-      toast.success("Stereo recovery running. Channel Rack, Mix Bus, and Stereo Out are active.");
+      setMaster((current) => Math.max(50, current));
+      toast.success("Built-in speaker recovery running. Channel Rack, Mix Bus, and Stereo Out are active.");
     } catch (error) {
       if (isExpectedOperationAbort(error)) { setIsPlaying(false); toast("Source changed during recovery. Press Recover & Play once more."); return; }
       console.error("[Audio] Recovery failed", error);
