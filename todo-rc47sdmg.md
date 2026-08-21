@@ -262,3 +262,11 @@
 - [x] Keep RF acquisition, physical receiver control, and unapproved third-party platform media out of scope while maintaining original/authorised browser playback.
 - [x] Add direct post-mix output-test coverage, validate the iPhone listening controls, typecheck, 54 tests, and production build.
 - [ ] Publish the output-diagnostic update and request iPhone confirmation of timer movement, meter activity, and audible output.
+
+## Verified Zero-Signal Stereo In Repair
+
+- [x] Inspect the zero-signal audio graph and identify the missing or broken connection between Channel Rack, Stereo In, Mix Bus, output analyser, and Stereo Out.
+- [x] Add an explicit Stereo In stage with idempotent Channel Rack routing and safe source replacement so both media playback and Test Output reach the post-mix analyser.
+- [x] Surface Stereo In route health separately from Mix Bus and Stereo Out, preserving the 50% minimum listening floor and built-in-speaker recovery action.
+- [x] Add graph and meter regression coverage, validate the mobile listening rail, typecheck, 54 tests, and production build.
+- [ ] Publish the Stereo In repair and request iPhone confirmation that Test Output moves the meter and produces sound.

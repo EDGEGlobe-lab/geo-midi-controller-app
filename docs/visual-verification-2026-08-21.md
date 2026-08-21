@@ -27,3 +27,5 @@ The Stereo Bass Performance calibration was reviewed at desktop and iPhone 12 Pr
 The built-in speaker repair was reviewed at the iPhone 12 Pro viewport. The top listening rail now exposes Enable Stereo, a distinct Built-in Speaker Play recovery action, 50%-minimum master control, Channel Rack → Mix Bus → Stereo Out route state, and post-mix meter labels without overlapping the transport or navigation.
 
 The follow-up output diagnosis control was reviewed at the iPhone 12 Pro viewport. Test Output is visibly available beside Enable Stereo and Built-in Speaker Play, making it possible to check the same post-mix output route and meter independently of loaded media playback.
+
+The Stereo In routing repair was reviewed at the iPhone 12 Pro viewport. The listening rail now displays the distinct four-stage `IN → CH → BUS → OUT` path without disrupting the master control, recovery actions, or compact mobile layout.
