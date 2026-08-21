@@ -1,7 +1,8 @@
 # GEO MIDI Controller App
 
 <div align="center">
-  <img src="./logo.svg" alt="GEO MIDI Controller App Logo" width="150" height="150" style="margin: 20px 0;" />
+  <img src="./logo.svg" alt="GEO MIDI Controller App - Neon Green Blueberry Logo" width="180" height="180" />
+  <p><em>A browser-native control room for the GEO electronic music system</em></p>
 </div>
 
 A standalone deployable audio controller deck with bundled playback, transport controls, visual meters, and advanced multi-track mixing channels for the GEO electronic music system.
@@ -155,6 +156,7 @@ geo-midi-controller-app/
 ├── docs/               # Documentation
 ├── drizzle/            # Database migrations
 ├── patches/            # Dependency patches
+├── logo.svg            # Neon green blueberry branding logo
 ├── vite.config.ts      # Vite configuration
 ├── drizzle.config.ts   # Drizzle ORM configuration
 ├── package.json        # Project dependencies
