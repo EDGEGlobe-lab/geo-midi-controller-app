@@ -1,0 +1,2 @@
+.stereo-test { min-height:30px; padding:0 8px; border:1px solid rgba(85,230,255,.3); border-radius:4px; color:#dffcff; background:rgba(85,230,255,.08); font:7px "IBM Plex Mono", monospace; }
+@media (max-width:760px) { .stereo-test { min-height:34px; } }

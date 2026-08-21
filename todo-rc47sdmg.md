@@ -254,3 +254,11 @@
 - [x] Enforce a 50% minimum listening floor, and provide a distinct built-in-speaker recovery action that does not require headphones or external speaker hardware.
 - [x] Add route and meter regression coverage, verify mobile controls, typecheck, 54 tests, and production build.
 - [ ] Publish the routing repair and request iPhone built-in-speaker confirmation.
+
+## Truthful Meter and Silent Output Investigation
+
+- [x] Trace the remaining silent playback route, including source readiness, direct media playback, post-mix analyser values, AudioContext state, and built-in-speaker recovery.
+- [x] Repair any confirmed source or output route defect without fabricating positive dBFS peaks, contradictory headroom values, or external loudness claims.
+- [x] Keep RF acquisition, physical receiver control, and unapproved third-party platform media out of scope while maintaining original/authorised browser playback.
+- [x] Add direct post-mix output-test coverage, validate the iPhone listening controls, typecheck, 54 tests, and production build.
+- [ ] Publish the output-diagnostic update and request iPhone confirmation of timer movement, meter activity, and audible output.

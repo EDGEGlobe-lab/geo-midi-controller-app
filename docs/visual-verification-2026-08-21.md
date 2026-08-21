@@ -25,3 +25,5 @@ The Audio Source History workspace was reviewed at desktop and iPhone 12 Pro dim
 The Stereo Bass Performance calibration was reviewed at desktop and iPhone 12 Pro dimensions. The profile selector, reference-volume action, peak/headroom meter, local visual-only wave map, and existing recovery path remain reachable. Before playback, the browser-derived meter correctly shows an armed state rather than fabricated peak or headroom values.
 
 The built-in speaker repair was reviewed at the iPhone 12 Pro viewport. The top listening rail now exposes Enable Stereo, a distinct Built-in Speaker Play recovery action, 50%-minimum master control, Channel Rack → Mix Bus → Stereo Out route state, and post-mix meter labels without overlapping the transport or navigation.
+
+The follow-up output diagnosis control was reviewed at the iPhone 12 Pro viewport. Test Output is visibly available beside Enable Stereo and Built-in Speaker Play, making it possible to check the same post-mix output route and meter independently of loaded media playback.

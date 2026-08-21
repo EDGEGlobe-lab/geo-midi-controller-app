@@ -53,6 +53,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import "@/components/StereoPerformanceControls.css";
+import "@/components/StereoOutputTest.css";
 
 const AUDIO_TRACKS = [
   { id: "geo-render", label: "Night Drive Practice Mix", src: "/manus-storage/parkway-night-drive_83138bc2.wav", tag: "D MAJOR / 156 BPM" },
@@ -136,8 +137,8 @@ function ContactPanel({ draft, setDraft, pending, onSubmit }: { draft: ContactDr
   return <section className="contact-panel panel"><div className="panel-header"><div><div className="section-kicker"><Radio size={13} /> Client enquiry / non-transactional</div><h2>Start a service conversation <span className="muted-slash">/</span> <span>secure follow-up</span></h2></div><span className="small-pill">NO PAYMENT DATA</span></div><p className="contact-copy">Describe the production service you need. You may request payment details for a later direct conversation, but never send card numbers, bank-account details, transfer credentials, or identity documents through this form.</p><form className="contact-form" onSubmit={(event) => { event.preventDefault(); onSubmit(); }}><input className="contact-honeypot" tabIndex={-1} autoComplete="off" aria-hidden="true" value={draft.website} onChange={(event) => setDraft((value) => ({ ...value, website: event.target.value }))} /><label><span>Name</span><input required minLength={2} maxLength={160} value={draft.name} onChange={(event) => setDraft((value) => ({ ...value, name: event.target.value }))} placeholder="Your name" /></label><label><span>Email</span><input required type="email" maxLength={320} value={draft.email} onChange={(event) => setDraft((value) => ({ ...value, email: event.target.value }))} placeholder="you@example.com" /></label><label><span>Service interest</span><select value={draft.serviceInterest} onChange={(event) => setDraft((value) => ({ ...value, serviceInterest: event.target.value as ContactDraft["serviceInterest"] }))}><option value="production">Music production</option><option value="mix-master">Mixing & mastering</option><option value="studio-system">Studio system design</option><option value="other">Other service</option></select></label><label className="contact-message"><span>Project brief</span><textarea required minLength={12} maxLength={4000} value={draft.message} onChange={(event) => setDraft((value) => ({ ...value, message: event.target.value }))} placeholder="Tell us about the project, timeline, and the help you need." /></label><label className="contact-check"><input type="checkbox" checked={draft.paymentDetailsRequested} onChange={(event) => setDraft((value) => ({ ...value, paymentDetailsRequested: event.target.checked }))} /><span>Request payment details for a later direct follow-up.</span></label><button className="solid-button" disabled={pending} type="submit">{pending ? "Sending enquiry…" : "Send service enquiry"}</button></form></section>;
 }
 
-function StereoControl({ master, status, channel, mixBus, compact, profile, meter, onEnable, onRecover, onMasterChange, onProfileChange, onReferenceVolume, onCompactToggle }: { master: number; status: "locked" | "ready" | "error"; channel: "idle" | "ready" | "error"; mixBus: "idle" | "ready" | "error"; compact: boolean; profile: BassProfileId; meter: StereoMeter; onEnable: () => void; onRecover: () => void; onMasterChange: (value: number) => void; onProfileChange: (value: BassProfileId) => void; onReferenceVolume: () => void; onCompactToggle: () => void }) {
-  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><button className="stereo-recover" onClick={onRecover}><Play size={13} fill="currentColor" /><span>BUILT-IN SPEAKER PLAY</span></button><div className="route-health" aria-label={`Channel Rack ${channel}; Mix Bus ${mixBus}; Stereo Out ${status}`}><span className={`route-${channel}`}>CH</span><i /> <span className={`route-${mixBus}`}>BUS</span><i /> <span className={`route-${status}`}>OUT</span></div><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 50 percent" type="range" min="50" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><div className="stereo-performance"><span>LOCAL BASS PERFORMANCE</span><select aria-label="Bass performance profile" value={profile} onChange={(event) => { if (isBassProfileId(event.target.value)) onProfileChange(event.target.value); }}>{Object.entries(BASS_PROFILES).map(([id, option]) => <option key={id} value={id}>{option.label}</option>)}</select><button className="stereo-reference" onClick={onReferenceVolume}>SET {BASS_PROFILES[profile].referenceVolume}%</button><div className="stereo-meter-readout"><span>POST-MIX PEAK <strong>{formatMeterDb(meter.peakDb)}</strong></span><span>HEADROOM <strong>{formatMeterDb(meter.headroomDb)}</strong></span><em>Browser signal estimate · not speaker loudness</em></div><div className="stereo-signal-map" aria-label="Abstract local wave modulation display"><span style={{ height: `${26 + meter.lowEnergy * 42}%` }} /><span style={{ height: `${46 + meter.lowEnergy * 30}%` }} /><span style={{ height: `${30 + meter.lowEnergy * 48}%` }} /><span style={{ height: `${52 + meter.lowEnergy * 24}%` }} /><span style={{ height: `${34 + meter.lowEnergy * 40}%` }} /><small>LOCAL WAVE MAP · DISPLAY ONLY</small></div></div><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
+function StereoControl({ master, status, channel, mixBus, compact, profile, meter, onEnable, onRecover, onTestOutput, onMasterChange, onProfileChange, onReferenceVolume, onCompactToggle }: { master: number; status: "locked" | "ready" | "error"; channel: "idle" | "ready" | "error"; mixBus: "idle" | "ready" | "error"; compact: boolean; profile: BassProfileId; meter: StereoMeter; onEnable: () => void; onRecover: () => void; onTestOutput: () => void; onMasterChange: (value: number) => void; onProfileChange: (value: BassProfileId) => void; onReferenceVolume: () => void; onCompactToggle: () => void }) {
+  return <aside className={`stereo-control stereo-${status}`} aria-label="Stereo output control"><button className="stereo-enable" onClick={onEnable} aria-pressed={status === "ready"}><Volume2 size={15} /><span>{status === "ready" ? "STEREO READY" : status === "error" ? "RETRY STEREO" : "ENABLE STEREO"}</span></button><button className="stereo-recover" onClick={onRecover}><Play size={13} fill="currentColor" /><span>BUILT-IN SPEAKER PLAY</span></button><button className="stereo-test" onClick={onTestOutput}>TEST OUTPUT</button><div className="route-health" aria-label={`Channel Rack ${channel}; Mix Bus ${mixBus}; Stereo Out ${status}`}><span className={`route-${channel}`}>CH</span><i /> <span className={`route-${mixBus}`}>BUS</span><i /> <span className={`route-${status}`}>OUT</span></div><label><span>MASTER {master}%</span><input aria-label="Master volume, minimum 50 percent" type="range" min="50" max="100" value={master} onChange={(event) => onMasterChange(Number(event.target.value))} /></label><div className="stereo-performance"><span>LOCAL BASS PERFORMANCE</span><select aria-label="Bass performance profile" value={profile} onChange={(event) => { if (isBassProfileId(event.target.value)) onProfileChange(event.target.value); }}>{Object.entries(BASS_PROFILES).map(([id, option]) => <option key={id} value={id}>{option.label}</option>)}</select><button className="stereo-reference" onClick={onReferenceVolume}>SET {BASS_PROFILES[profile].referenceVolume}%</button><div className="stereo-meter-readout"><span>POST-MIX PEAK <strong>{formatMeterDb(meter.peakDb)}</strong></span><span>HEADROOM <strong>{formatMeterDb(meter.headroomDb)}</strong></span><em>Browser signal estimate · not speaker loudness</em></div><div className="stereo-signal-map" aria-label="Abstract local wave modulation display"><span style={{ height: `${26 + meter.lowEnergy * 42}%` }} /><span style={{ height: `${46 + meter.lowEnergy * 30}%` }} /><span style={{ height: `${30 + meter.lowEnergy * 48}%` }} /><span style={{ height: `${52 + meter.lowEnergy * 24}%` }} /><span style={{ height: `${34 + meter.lowEnergy * 40}%` }} /><small>LOCAL WAVE MAP · DISPLAY ONLY</small></div></div><button className="stereo-compact" onClick={onCompactToggle} aria-pressed={compact}>{compact ? "EXPAND" : "COMPACT"}</button></aside>;
 }
 
 type AssetFocusItem = { id: number; filename: string; assetType: string; durationMs: number | null; tags: string | null };
@@ -212,6 +213,7 @@ export default function Home() {
   const [peakNormalize, setPeakNormalize] = useState(false);
   const [bassProfile, setBassProfile] = useState<BassProfileId>(() => { const stored = window.localStorage.getItem("parkway-bass-profile"); return isBassProfileId(stored) ? stored : "reference"; });
   const [stereoMeter, setStereoMeter] = useState<StereoMeter>({ peakDb: null, headroomDb: null, lowEnergy: 0 });
+  const [signalTestActive, setSignalTestActive] = useState(false);
   const [hardwareDraft, setHardwareDraft] = useState<HardwareDraft>({ label: "", category: "computer", productReference: "" });
   const [soundAccessConsent, setSoundAccessConsent] = useState(false);
   const [autoFallbackEnabled, setAutoFallbackEnabled] = useState(() => window.localStorage.getItem("parkway-night-drive-auto-fallback") !== "false");
@@ -462,7 +464,7 @@ export default function Home() {
   }, [autoFallbackEnabled]);
 
   useEffect(() => {
-    if (!isPlaying || !analyserRef.current || !outputAnalyserRef.current) return;
+    if ((!isPlaying && !signalTestActive) || !analyserRef.current || !outputAnalyserRef.current) return;
     const analyser = analyserRef.current;
     const outputAnalyser = outputAnalyserRef.current;
     const frequencyData = new Uint8Array(analyser.frequencyBinCount);
@@ -485,7 +487,7 @@ export default function Home() {
     };
     draw();
     return () => { if (analysisFrameRef.current !== null) window.cancelAnimationFrame(analysisFrameRef.current); analysisFrameRef.current = null; };
-  }, [isPlaying, selectedTrack]);
+  }, [isPlaying, selectedTrack, signalTestActive]);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -563,6 +565,34 @@ export default function Home() {
       console.error("[Audio] Recovery failed", error);
       setStereoStatus("error");
       toast.error("Recovery could not start playback. Check the device output route, then press Recover & Play again.");
+    }
+  };
+
+  const testBuiltInSpeakerOutput = async () => {
+    const context = ensureAudioGraph();
+    const mixBus = mixBusRef.current;
+    if (!context || !mixBus) { setStereoStatus("error"); toast.error("Stereo test output is unavailable in this browser."); return; }
+    try {
+      if (context.state !== "running") await context.resume();
+      setMaster((current) => Math.max(50, current));
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(220, context.currentTime);
+      gain.gain.setValueAtTime(0.0001, context.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.12, context.currentTime + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + 0.72);
+      oscillator.connect(gain).connect(mixBus);
+      setSignalTestActive(true);
+      oscillator.start();
+      oscillator.stop(context.currentTime + 0.76);
+      window.setTimeout(() => setSignalTestActive(false), 900);
+      setChannelStatus("ready"); setMixBusStatus("ready"); setStereoStatus("ready");
+      toast.success("Post-mix output test sent. The meter should move during the short tone.");
+    } catch (error) {
+      console.error("[Audio] Built-in speaker test failed", error);
+      setStereoStatus("error");
+      toast.error("The browser blocked the output test. Tap Enable Stereo, then try Test Output again.");
     }
   };
 
@@ -829,7 +859,7 @@ export default function Home() {
         <header className="topbar"><div className="topbar-left"><button className="mobile-menu" aria-expanded={showBrowser} aria-controls="parkway-workspace-navigation" onClick={() => setShowBrowser((value) => !value)}><Menu size={16} /><span>Menu</span><strong>{activeView}</strong></button><div className="breadcrumb"><span>SESSIONS</span><span className="crumb-separator">/</span><strong>Night Drive</strong><span className="saved-state"><span /> Autosaved</span></div></div><div className="top-actions"><button className="icon-button" onClick={() => toast("Search is ready for instruments, clips, and commands")}><Search size={15} /></button><button className="icon-button" onClick={() => toast("Settings panel coming soon")}><Settings2 size={15} /></button><button className="user-chip" onClick={() => toast("PARKWAY operator profile")}>JM</button></div></header>
 
         <div className="transport"><div className="transport-group transport-main"><button className="transport-button" onClick={stop}><Square size={13} fill="currentColor" /></button><button className={`transport-play ${isPlaying ? "is-playing" : ""}`} onClick={togglePlay}>{isPlaying ? <Pause size={15} fill="currentColor" /> : <Play size={15} fill="currentColor" />}</button><button className={`transport-button ${isLooping ? "is-on" : ""}`} onClick={() => setIsLooping((value) => !value)}><RotateCcw size={14} /></button><div className="transport-divider" /><div className="tempo-control"><span className="transport-caption">TEMPO</span><input aria-label="Tempo" type="number" value={tempo} min={40} max={240} onChange={(event) => setTempo(Number(event.target.value))} /><span className="unit">BPM</span></div><div className="transport-divider" /><div className="timecode"><span className="timecode-main">{formatTime(currentTime)}</span><span className="timecode-sub">/ {formatTime(duration)}</span></div></div><div className="transport-center"><div className="bar-display"><span className="transport-caption">BAR</span><strong>{String(activeBar).padStart(2, "0")}</strong><span className="bar-total">/ 16</span></div><div className="transport-status"><span className="status-light" /> {isPlaying ? "PLAYING" : stereoStatus === "ready" ? "STEREO READY" : "READY"}</div></div><div className="transport-group transport-end"><div className="track-select"><AudioWaveform size={14} /><select aria-label="Audio preview" value={currentTrackId} onChange={(event) => { const clearedFallback = clearFallbackForManualSource(); setFallbackSourceUrl(clearedFallback.fallbackSourceUrl); setFallbackSelection(clearedFallback.fallbackSelection); setHistorySourceUrl(null); setHistorySourceLabel(null); setRadioActive(false); setCurrentTrackId(event.target.value as (typeof AUDIO_TRACKS)[number]["id"]); stop(); }}><option value="geo-render">GEO Controller Render</option><option value="muchie-casket">Muchie Pop Casket</option><option value="autonomous-project">Autonomous Manus AI Audio</option></select></div><button className="transport-button" onClick={() => toast("Metronome enabled for the next take")}><Activity size={14} /></button><button className="transport-button" onClick={() => toast("Project saved locally")}><Save size={14} /></button></div></div>
-        <StereoControl master={master} status={stereoStatus} channel={channelStatus} mixBus={mixBusStatus} compact={compactMode} profile={bassProfile} meter={stereoMeter} onEnable={() => void enableStereo()} onRecover={() => void recoverAndPlay()} onMasterChange={setMaster} onProfileChange={setBassProfile} onReferenceVolume={() => setMaster(BASS_PROFILES[bassProfile].referenceVolume)} onCompactToggle={() => setCompactMode((value) => { const next = !value; setShowBrowser(!next); return next; })} />
+        <StereoControl master={master} status={stereoStatus} channel={channelStatus} mixBus={mixBusStatus} compact={compactMode} profile={bassProfile} meter={stereoMeter} onEnable={() => void enableStereo()} onRecover={() => void recoverAndPlay()} onTestOutput={() => void testBuiltInSpeakerOutput()} onMasterChange={setMaster} onProfileChange={setBassProfile} onReferenceVolume={() => setMaster(BASS_PROFILES[bassProfile].referenceVolume)} onCompactToggle={() => setCompactMode((value) => { const next = !value; setShowBrowser(!next); return next; })} />
 
         <div className="content-scroll"><div className="workspace-heading"><div><div className="section-kicker"><Radio size={13} /> {activeView} / MASTER SESSION</div><h1>Master bus.<br /><em>Ready to move.</em></h1><p className="heading-copy">Transport, timing, and signal routing in one tactile performance surface.</p><div className="master-readout"><div className="readout-scope"><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /><span /></div><div className="readout-meta"><span>MASTER / STEREO</span><strong>{master}%</strong><small>{formatMeterDb(stereoMeter.peakDb)} peak · {formatMeterDb(stereoMeter.headroomDb)} headroom</small></div><div className="readout-state"><span className="status-light" /> {stereoMeter.peakDb === null ? "METER ARMED" : "SIGNAL ACTIVE"}</div></div></div><div className="heading-tools"><button className="outline-button" onClick={() => toast("New track added to the session")}><Plus size={14} /> Add track</button><button className="solid-button" onClick={() => toast("Render queue started")}><Zap size={14} /> Render</button></div></div>
 
