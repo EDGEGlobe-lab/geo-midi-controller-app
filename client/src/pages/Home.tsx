@@ -15,6 +15,7 @@ import { HardwareDevelopmentPanel } from "@/components/HardwareDevelopmentPanel"
 import { ManusMusicUploadPanel, type ManusUploadStage } from "@/components/ManusMusicUploadPanel";
 import { getAdjacentStationProgramme, getStationProgramme, parkwayRadioStations } from "@shared/radioStationCatalog";
 import { isExpectedOperationAbort } from "@/lib/operationAbort";
+import { workspaceDataPlan, type ParkwayWorkspace } from "@/lib/workspaceDataPlan";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
@@ -176,9 +177,9 @@ export default function Home() {
   const [compactMode, setCompactMode] = useState(() => window.localStorage.getItem("parkway-compact-mode") === "true");
   const [activeBar, setActiveBar] = useState(8);
   const [selectedTrack, setSelectedTrack] = useState("pluck");
-  const [activeView, setActiveView] = useState(() => {
+  const [activeView, setActiveView] = useState<ParkwayWorkspace>(() => {
     const requestedView = new URLSearchParams(window.location.search).get("view");
-    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Generator", "Radio", "Product", "Devices", "Develop", "Assets", "History", "Feedback", "Review", "Contact"].includes(requestedView ?? "") ? requestedView! : "Arrangement";
+    return ["Arrangement", "Mixer", "Piano Roll", "Performance", "Studio", "Generator", "Radio", "Product", "Devices", "Develop", "Assets", "History", "Feedback", "Review", "Contact"].includes(requestedView ?? "") ? requestedView as ParkwayWorkspace : "Arrangement";
   });
   const [showBrowser, setShowBrowser] = useState(() => window.innerWidth >= 760);
   const [tracksState, setTracksState] = useState<TrackState[]>(() => tracks.map((track) => ({ ...track, muted: false, solo: false, armed: track.id === "pluck" })));
@@ -220,14 +221,16 @@ export default function Home() {
   const [selectedFeedbackId, setSelectedFeedbackId] = useState<number | null>(null);
   const activeTrack = AUDIO_TRACKS.find((track) => track.id === currentTrackId) ?? AUDIO_TRACKS[0];
   const projectKey = "night-drive-07";
-  const assetsQuery = trpc.studio.assets.list.useQuery({ projectKey }, { enabled: isAuthenticated });
+  const isAdmin = Boolean(isAuthenticated && user?.role === "admin");
+  const dataPlan = workspaceDataPlan(activeView, isAdmin);
+  const assetsQuery = trpc.studio.assets.list.useQuery({ projectKey }, { enabled: isAuthenticated && dataPlan.projectAssets });
   const uploadAsset = trpc.studio.assets.upload.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Asset stored in the cloud project library"); }, onError: (error) => toast.error(error.message) });
-  const uploadManusMusic = trpc.studio.assets.uploadManusMusic.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Approved music stored with source-provenance tags"); }, onError: (error) => toast.error(error.message) });
+  const uploadManusMusic = trpc.studio.assets.uploadManusMusic.useMutation({ onError: (error) => toast.error(error.message) });
   const updateAssetTags = trpc.studio.assets.updateTags.useMutation({ onSuccess: () => { void assetsQuery.refetch(); toast.success("Asset tags updated"); } });
-  const jobsQuery = trpc.studio.jobs.list.useQuery({ projectKey }, { enabled: isAuthenticated });
-  const samplerQuery = trpc.studio.sampler.list.useQuery({ projectKey }, { enabled: isAuthenticated });
-  const sourceHistoryQuery = trpc.studio.sourceHistory.list.useQuery({ projectKey }, { enabled: isAuthenticated });
-  const savedRadioQuery = trpc.radio.saved.useQuery(undefined, { enabled: isAuthenticated });
+  const jobsQuery = trpc.studio.jobs.list.useQuery({ projectKey }, { enabled: isAuthenticated && dataPlan.jobs });
+  const samplerQuery = trpc.studio.sampler.list.useQuery({ projectKey }, { enabled: isAuthenticated && dataPlan.samplerOutputs });
+  const sourceHistoryQuery = trpc.studio.sourceHistory.list.useQuery({ projectKey }, { enabled: isAuthenticated && dataPlan.sourceHistory });
+  const savedRadioQuery = trpc.radio.saved.useQuery(undefined, { enabled: isAuthenticated && dataPlan.savedStations });
   const createJob = trpc.studio.jobs.create.useMutation();
   const transitionJob = trpc.studio.jobs.transition.useMutation();
   const createSamplerOutput = trpc.studio.sampler.create.useMutation();
@@ -237,12 +240,12 @@ export default function Home() {
   const saveRadioStation = trpc.radio.save.useMutation({ onSuccess: () => { void savedRadioQuery.refetch(); toast.success("Station saved to your private library"); }, onError: (error) => toast.error(error.message) });
   const removeRadioStation = trpc.radio.remove.useMutation({ onSuccess: () => { void savedRadioQuery.refetch(); toast("Station removed from your private library"); }, onError: (error) => toast.error(error.message) });
   const contactSubmit = trpc.contact.submit.useMutation();
-  const hardwareQuery = trpc.hardware.list.useQuery(undefined, { enabled: isAuthenticated });
+  const hardwareQuery = trpc.hardware.list.useQuery(undefined, { enabled: isAuthenticated && dataPlan.hardwareRegistrations });
   const registerHardware = trpc.hardware.register.useMutation({ onSuccess: () => { setHardwareDraft({ label: "", category: "computer", productReference: "" }); void hardwareQuery.refetch(); toast.success("Device label registered in disabled state"); }, onError: (error) => toast.error(error.message) });
   const activateHardware = trpc.hardware.activate.useMutation({ onSuccess: () => { setSoundAccessConsent(false); void hardwareQuery.refetch(); toast.success("PARKWAY browser sound-access profile activated"); }, onError: (error) => toast.error(error.message) });
   const revokeHardware = trpc.hardware.revoke.useMutation({ onSuccess: () => { void hardwareQuery.refetch(); toast("PARKWAY browser sound-access profile revoked"); }, onError: (error) => toast.error(error.message) });
   const submitCompatibilityFeedback = trpc.compatibility.submit.useMutation({ onSuccess: () => toast.success("Compatibility feedback submitted for authorized staff review"), onError: (error) => toast.error(error.message) });
-  const reviewEnabled = Boolean(isAuthenticated && user?.role === "admin");
+  const reviewEnabled = dataPlan.compatibilityReview;
   const compatibilityReviewQuery = trpc.compatibility.review.list.useQuery(undefined, { enabled: reviewEnabled });
   const compatibilityReviewersQuery = trpc.compatibility.review.reviewers.useQuery(undefined, { enabled: reviewEnabled });
   const compatibilityHistoryQuery = trpc.compatibility.review.history.useQuery({ feedbackId: selectedFeedbackId ?? 0 }, { enabled: reviewEnabled && selectedFeedbackId !== null });
@@ -694,6 +697,8 @@ export default function Home() {
       setManusUploadStage("uploading");
       const dataBase64 = await new Promise<string>((resolve, reject) => { const reader = new FileReader(); reader.onload = () => resolve(String(reader.result).split(",")[1] ?? ""); reader.onerror = () => reject(new Error("Could not read the audio file")); reader.readAsDataURL(file); });
       const stored = await uploadManusMusic.mutateAsync({ projectKey, filename: file.name, mimeType: file.type, dataBase64, durationMs: metadata.durationMs, waveformPreview: metadata.waveformPreview, tags: [] });
+      const refreshedAssets = await assetsQuery.refetch();
+      if (!refreshedAssets.data?.some((asset) => asset.id === stored.id)) throw new Error("The stored audio asset could not be confirmed for playback");
       selectPreviewSource(`asset:${stored.id}`);
       setManusUploadStage("stored");
       toast.success("Music stored and selected for the stereo preview. Press Play to listen.");
@@ -726,7 +731,7 @@ export default function Home() {
         {showBrowser && <>
           <div className="side-label">Workspace</div>
           <nav className="side-nav">
-            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Generator", icon: Waves }, { label: "Radio", icon: Radio }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Develop", icon: Code2 }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Feedback", icon: AlertTriangle }, ...(user?.role === "admin" ? [{ label: "Review", icon: ShieldCheck }] : []), { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
+            {[{ label: "Arrangement", icon: Layers3 }, { label: "Mixer", icon: SlidersHorizontal }, { label: "Piano Roll", icon: Grid3X3 }, { label: "Performance", icon: Zap }, { label: "Studio", icon: Sparkles }, { label: "Generator", icon: Waves }, { label: "Radio", icon: Radio }, { label: "Product", icon: Gauge }, { label: "Devices", icon: HardDrive }, { label: "Develop", icon: Code2 }, { label: "Assets", icon: FolderOpen }, { label: "History", icon: RotateCcw }, { label: "Feedback", icon: AlertTriangle }, ...(user?.role === "admin" ? [{ label: "Review", icon: ShieldCheck }] : []), { label: "Contact", icon: Radio }].map(({ label, icon: Icon }) => <button key={label} className={`side-link ${activeView === label ? "is-active" : ""}`} onClick={() => setActiveView(label as ParkwayWorkspace)}><Icon size={15} /><span>{label}</span>{label === "Performance" && <span className="live-dot" />}</button>)}
           </nav>
           <div className="side-label">Project</div>
           <div className="project-card"><div className="project-orbit"><Disc3 size={18} /></div><div className="min-w-0"><div className="project-title">Night Drive / 07</div><div className="project-meta">D major · 156 BPM</div></div><ChevronDown size={14} className="text-muted" /></div>

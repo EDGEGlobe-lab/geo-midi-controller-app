@@ -200,3 +200,10 @@
 - [x] Support user-owned project code and build instructions without storing credentials, firmware-signing keys, serial numbers, or raw removable-media contents.
 - [x] Add local-first hardware-profile boundary tests and verify desktop/mobile workbench layouts, type checking, 45 passing tests, and the production build.
 - [ ] Add boundary tests, responsive verification, publication, and an optional follow-up path for a user-authorised local companion connection.
+
+## Reliability and Performance Repair
+
+- [x] Inspect current browser, network, and development-server evidence for reproducible operational failures affecting PARKWAY playback, radio, asset upload, or workspace responsiveness.
+- [x] Address confirmed reliability and performance faults with focused code changes that preserve user-initiated audio, original-audio station boundaries, provenance, and local-only device controls.
+- [x] Add deferred-workspace query and post-upload asset-confirmation regression coverage; verify typecheck, 48 tests, production build, and desktop workspace routes.
+- [ ] Publish the reliability repair and request real-device confirmation of radio and uploaded-asset playback.

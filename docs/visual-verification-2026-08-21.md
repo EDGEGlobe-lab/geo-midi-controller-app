@@ -9,3 +9,5 @@ Mobile review at 375 × 812 confirmed that the radio queue, transport buttons, s
 The Manus AI Music Generator lane was reviewed at 1280 × 720 and 375 × 812. Its user-initiated disclosure, server-tag provenance explanation, 30 MB audio-file chooser, empty project-asset state, and generator navigation entry remain legible without overlap. The desktop and mobile layouts preserve the single-action upload path and do not imply a background render or a false AI-origin claim.
 
 The same desktop and mobile layouts were rechecked after adding staged file-read, media-analysis, upload, stored, and error states. The progress treatment is hidden until a user begins an upload, while explicit `MANUS UPLOAD`, `USER APPROVED`, and `SOURCE FILE` badges render only on stored generator assets.
+
+Reliability review at the desktop viewport confirmed that both the initial Arrangement route and the Generator route render their shared transport, stereo recovery rail, sidebar navigation, and the respective workspace state without layout regressions after private data loading was deferred by workspace.
