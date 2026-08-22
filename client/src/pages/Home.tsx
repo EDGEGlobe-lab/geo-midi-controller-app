@@ -2141,6 +2141,24 @@ export default function Home() {
       ),
     [assetsQuery.data, assetFilterTag]
   );
+  const selectWorkspace = (view: string) => {
+    setActiveView(view);
+    const nextUrl = new URL(window.location.href);
+    nextUrl.searchParams.set("view", view);
+    window.history.replaceState({}, "", nextUrl);
+    if (window.innerWidth < 760) setShowBrowser(false);
+    window.requestAnimationFrame(() =>
+      document.getElementById("workspace-content")?.focus()
+    );
+  };
+  const returnToStart = () => {
+    selectWorkspace("Arrangement");
+    window.requestAnimationFrame(() =>
+      document
+        .getElementById("workspace-content")
+        ?.scrollTo({ top: 0, behavior: "smooth" })
+    );
+  };
 
   return (
     <main className={`parkway-app ${compactMode ? "compact-mode" : ""}`}>
@@ -2163,8 +2181,16 @@ export default function Home() {
         }
       />
       <div className="parkway-grid" />
+      {showBrowser && (
+        <button
+          className="nav-scrim"
+          aria-label="Close workspace navigation"
+          onClick={() => setShowBrowser(false)}
+        />
+      )}
       <aside
         className={`sidebar ${showBrowser ? "sidebar-open" : "sidebar-collapsed"}`}
+        aria-label="Workspace navigation"
       >
         <div className="brand-lockup">
           <div className="brand-mark">
@@ -2180,7 +2206,11 @@ export default function Home() {
         {showBrowser && (
           <>
             <div className="side-label">Workspace</div>
-            <nav className="side-nav">
+            <nav
+              id="workspace-navigation"
+              className="side-nav"
+              aria-label="Choose workspace"
+            >
               {[
                 { label: "Arrangement", icon: Layers3 },
                 { label: "Mixer", icon: SlidersHorizontal },
@@ -2204,7 +2234,7 @@ export default function Home() {
                 <button
                   key={label}
                   className={`side-link ${activeView === label ? "is-active" : ""}`}
-                  onClick={() => setActiveView(label)}
+                  onClick={() => selectWorkspace(label)}
                 >
                   <Icon size={15} />
                   <span>{label}</span>
@@ -2273,6 +2303,9 @@ export default function Home() {
             <button
               className="mobile-menu"
               onClick={() => setShowBrowser(value => !value)}
+              aria-label="Open workspace navigation"
+              aria-controls="workspace-navigation"
+              aria-expanded={showBrowser}
             >
               <Menu size={16} />
             </button>
@@ -2286,6 +2319,13 @@ export default function Home() {
             </div>
           </div>
           <div className="top-actions">
+            <button
+              className="workspace-home-button"
+              onClick={returnToStart}
+              title="Return to the start workspace"
+            >
+              <Layers3 size={14} /> <span>Start</span>
+            </button>
             <button
               className="icon-button"
               onClick={() =>
@@ -2422,7 +2462,7 @@ export default function Home() {
           }
         />
 
-        <div className="content-scroll">
+        <div id="workspace-content" className="content-scroll" tabIndex={-1}>
           <div className="workspace-heading">
             <div>
               <div className="section-kicker">

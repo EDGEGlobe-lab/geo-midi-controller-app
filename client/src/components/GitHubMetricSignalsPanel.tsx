@@ -1,5 +1,13 @@
 import { trpc } from "@/lib/trpc";
-import { Activity, ExternalLink, RefreshCw, Target } from "lucide-react";
+import { getMidpointPlanningAlerts } from "@shared/metricPlanningAlerts";
+import {
+  Activity,
+  BellRing,
+  CircleAlert,
+  ExternalLink,
+  RefreshCw,
+  Target,
+} from "lucide-react";
 
 const formatCount = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -9,8 +17,14 @@ const formatCount = new Intl.NumberFormat("en-US", {
 export function GitHubMetricSignalsPanel() {
   const snapshot = trpc.github.repositoryScaleSnapshot.useQuery(undefined, {
     staleTime: 5 * 60_000,
+    refetchInterval: 5 * 60_000,
+    refetchIntervalInBackground: false,
     retry: false,
   });
+  const alerts = snapshot.data
+    ? getMidpointPlanningAlerts(snapshot.data.metrics)
+    : [];
+  const reachedAlerts = alerts.filter(alert => alert.reached);
 
   return (
     <section
@@ -44,6 +58,33 @@ export function GitHubMetricSignalsPanel() {
         requested large ranges below are clearly labelled planning targets, not
         generated engagement, live counts, or predictions.
       </p>
+      <div
+        className={`mt-4 flex items-start gap-3 border p-3 text-sm ${reachedAlerts.length ? "border-amber-300/40 bg-amber-300/10 text-amber-100" : "border-cyan-300/20 bg-cyan-300/5 text-cyan-50"}`}
+        aria-live="polite"
+      >
+        {reachedAlerts.length ? (
+          <BellRing className="mt-0.5 shrink-0" size={17} />
+        ) : (
+          <CircleAlert className="mt-0.5 shrink-0" size={17} />
+        )}
+        <div>
+          <strong>
+            {reachedAlerts.length
+              ? `${reachedAlerts.length} midpoint planning alert${reachedAlerts.length === 1 ? "" : "s"} reached`
+              : "No midpoint planning alerts reached"}
+          </strong>
+          <p className="mt-1 text-xs leading-5 opacity-80">
+            {reachedAlerts.length
+              ? reachedAlerts
+                  .map(
+                    alert =>
+                      `${alert.label}: ${alert.verifiedCount.toLocaleString()} reached the ${alert.midpointThreshold.toLocaleString()} planning midpoint`
+                  )
+                  .join(" · ")
+              : "Signals refreshes every five minutes only while this workspace remains open. These are planning notifications based on verified counts, not engagement forecasts."}
+          </p>
+        </div>
+      </div>
       {snapshot.isLoading ? (
         <p className="mt-5 text-sm">Reading public repository metrics…</p>
       ) : null}
@@ -75,6 +116,13 @@ export function GitHubMetricSignalsPanel() {
                 <div className="mt-1 text-xs text-muted-foreground">
                   {formatCount.format(metric.targetMinimum)} –{" "}
                   {formatCount.format(metric.targetMaximum)}
+                </div>
+                <div className="mt-1 text-[10px] text-muted-foreground">
+                  Midpoint alert:{" "}
+                  {formatCount.format(
+                    alerts.find(alert => alert.id === metric.id)
+                      ?.midpointThreshold ?? 0
+                  )}
                 </div>
               </article>
             ))}
