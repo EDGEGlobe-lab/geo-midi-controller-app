@@ -1,0 +1,12 @@
+.repository-metrics-panel { display: grid; gap: 1rem; }
+.repository-metrics-copy { margin: 0; max-width: 76ch; color: var(--muted-foreground); font-size: .84rem; line-height: 1.6; }
+.repository-metrics-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .65rem; }
+.repository-metrics-grid article { min-height: 118px; padding: .85rem; border: 1px solid color-mix(in srgb, var(--border) 82%, #00e5ff 18%); border-radius: .65rem; background: linear-gradient(145deg, color-mix(in srgb, var(--card) 94%, #00e5ff 6%), var(--card)); display: flex; flex-direction: column; justify-content: space-between; }
+.repository-metrics-grid span { color: var(--muted-foreground); font-family: "IBM Plex Mono", monospace; font-size: .68rem; letter-spacing: .08em; }
+.repository-metrics-grid strong { color: #bdf8ff; font-family: "IBM Plex Mono", monospace; font-size: clamp(1.4rem, 3vw, 2.2rem); line-height: 1; }
+.repository-metrics-grid small { color: var(--muted-foreground); font-size: .72rem; }
+.repository-metrics-state { padding: 1rem; border-radius: .6rem; background: color-mix(in srgb, var(--card) 86%, #00e5ff 14%); color: var(--muted-foreground); }
+.repository-metrics-state.is-error { display: grid; gap: .4rem; border: 1px solid color-mix(in srgb, #ff4fb8 45%, var(--border)); color: #ffd9ef; }
+.repository-metrics-footer { display: flex; gap: .75rem; align-items: center; justify-content: space-between; flex-wrap: wrap; color: var(--muted-foreground); font-size: .72rem; }
+.repository-metrics-footer a { color: #7fefff; text-decoration: none; }
+@media (max-width: 720px) { .repository-metrics-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .repository-metrics-grid article:last-child { grid-column: span 2; } }

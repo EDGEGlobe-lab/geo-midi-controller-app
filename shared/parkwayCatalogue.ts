@@ -100,4 +100,17 @@ export const catalogueWaveformPreview = (track: ParkwayCatalogueTrack) => JSON.s
   return 18 + (seed % 72);
 }));
 
-export const catalogueSourceUrl = (track: ParkwayCatalogueTrack) => `/manus-storage/${track.storageKey}`;
+/**
+ * Canonical browser playback path for a project-owned object. This intentionally
+ * accepts a storage key only—not a URL—so the DAW never embeds CloudFront or any
+ * third-party audio host in its player source. The platform may serve this same-
+ * origin route using its own storage delivery layer, but users never transfer or
+ * configure an external host to play a PARKWAY master.
+ */
+export const projectAssetPlaybackUrl = (storageKey: string) => {
+  const normalized = storageKey.trim().replace(/^\/manus-storage\//, "").replace(/^\/+/, "");
+  if (!normalized || /^(?:https?:)?\/\//i.test(normalized)) throw new Error("A relative project storage key is required for browser playback");
+  return `/manus-storage/${normalized.split("/").map(encodeURIComponent).join("/")}`;
+};
+
+export const catalogueSourceUrl = (track: ParkwayCatalogueTrack) => projectAssetPlaybackUrl(track.storageKey);

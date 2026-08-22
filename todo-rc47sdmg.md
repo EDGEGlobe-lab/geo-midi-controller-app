@@ -302,3 +302,36 @@
 - [x] Keep each completed instrumental master as a separate selectable asset; never overwrite or imply vocals within an instrumental asset.
 - [x] Add regression coverage for synthetic-vocal provenance, source-type rejection, instrumental/vocal selection clarity, and consent-boundary messaging.
 - [x] Define every synthetic vocal as an original alien-creature EDM treatment with robotic formants, bass-responsive processing, and no imitation of franchise characters, game characters, actors, or identifiable people.
+
+## Direct PARKWAY WAV Playback Without External CDN Transfer
+
+- [ ] Audit every registered PARKWAY WAV asset for a direct `/manus-storage/` project-owned URL, browser-playable audio MIME type, and absence of CloudFront or other external-host dependency.
+- [ ] Repair any catalogue selector, media-element, or Stereo In routing path that prevents a direct WAV project asset from playing in the browser DAW.
+- [ ] Add regression coverage for direct project-owned WAV source resolution, source health, and no-external-host playback URLs.
+- [ ] Validate direct catalogue playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair.
+
+## Through-Composed Synthetic Vocal Catalogue
+
+- [ ] Replace the existing looping synthetic-vocal mix with a through-composed five-minute Night Drive Continuum vocal arrangement, retaining only original lyrics and non-identifiable alien-cyborg voice synthesis.
+- [ ] Define distinct continuous five-minute vocal arrangement maps and original lyric scripts for each of the remaining 19 PARKWAY tracks, with changing sections rather than repeated loops.
+- [ ] Render, assemble, upload, and register all 20 through-composed five-minute vocal masters as distinct project assets with `synthetic-vocal-only`, no-human-source, and no-franchise-imitation provenance.
+- [ ] Apply continuous cyborg-robotic alien vocal processing and child-friendly cartoon-filtered effects throughout every vocal master without copying any known voice or fictional character.
+- [ ] Replace the one-variant catalogue mapping with all 20 vocal-master mappings, direct player selection, lyric cues, and instrument/vocal provenance states.
+- [ ] Add regression coverage for full-catalogue vocal mappings, direct in-app WAV sources, no-loop arrangement metadata, and synthetic-voice safeguards.
+- [ ] Validate the 20 vocal selections through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish.
+
+## Built-In and System Speaker Playback Quality
+
+- [ ] Audit the browser DAW output graph for safe built-in phone and laptop speaker operation alongside system-selected compatible outputs, without claiming control of external device hardware or volume.
+- [ ] Strengthen bounded bass and loudness-preserving gain staging while retaining truthful browser-derived metering, user-gesture audio unlock, and the 50% listening floor.
+- [ ] Add regression coverage for built-in-speaker recovery, system-output-safe routing, and bass-profile limits.
+- [ ] Validate the listening controls on iPhone-sized and desktop layouts, document system-output boundaries, and publish the playback-quality repair.
+
+## Truthful Live GitHub Repository Metrics Engine
+
+- [x] Inspect `EDGEGlobe-lab/geo-midi-controller-app` and its current project state using the authenticated GitHub connection; do not overwrite concurrent repository changes.
+- [x] Implement a server-side GitHub metrics adapter for actual stars, forks, subscribers/watchers, branches, and tags, with explicit pagination and count-source semantics.
+- [x] Never render requested target totals as live values unless the GitHub API actually returns them; show real values, last refreshed time, loading/error state, and source boundaries instead.
+- [x] Add a PARKWAY Repository Metrics workspace with accessible live refresh, concise numeric formatting, and a link to the public repository.
+- [x] Add tests for GitHub API response normalization, pagination/count semantics, no-fabrication safeguards, and UI loading/error states.
+- [ ] Validate live API data in the published view, complete type checks/tests/build, save a checkpoint, and synchronize the changes to the connected GitHub repository.
