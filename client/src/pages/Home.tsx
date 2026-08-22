@@ -19,6 +19,7 @@ import { AudioSourceHistoryPanel } from "@/components/AudioSourceHistoryPanel";
 import { RadioStationPanel } from "@/components/RadioStationPanel";
 import { CompatibilityFeedbackPanel } from "@/components/CompatibilityFeedbackPanel";
 import { CompatibilityReviewPanel } from "@/components/CompatibilityReviewPanel";
+import { GitHubRepositoryMetricsPanel } from "@/components/GitHubRepositoryMetricsPanel";
 import { Inf4RadarDisplay } from "@/components/Inf4RadarDisplay";
 import { HardwareDevelopmentPanel } from "@/components/HardwareDevelopmentPanel";
 import { GitHubMetricSignalsPanel } from "@/components/GitHubMetricSignalsPanel";
