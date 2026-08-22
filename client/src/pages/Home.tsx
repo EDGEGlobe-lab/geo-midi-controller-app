@@ -6,28 +6,11 @@ import {
   clearFallbackForManualSource,
   decideFallbackRecovery,
 } from "@/lib/fallbackRecovery";
-import {
-  DevicesSoundAccessPanel,
-  type HardwareDraft,
-} from "@/components/DevicesSoundAccessPanel";
-import { ProductReadinessPanel } from "@/components/ProductReadinessPanel";
-import {
-  AIProjectFallbackPanel,
-  type FallbackSelection,
-} from "@/components/AIProjectFallbackPanel";
-import { AudioSourceHistoryPanel } from "@/components/AudioSourceHistoryPanel";
-import { RadioStationPanel } from "@/components/RadioStationPanel";
-import { CompatibilityFeedbackPanel } from "@/components/CompatibilityFeedbackPanel";
-import { CompatibilityReviewPanel } from "@/components/CompatibilityReviewPanel";
-import { GitHubRepositoryMetricsPanel } from "@/components/GitHubRepositoryMetricsPanel";
+import type { HardwareDraft } from "@/components/DevicesSoundAccessPanel";
+import type { FallbackSelection } from "@/components/AIProjectFallbackPanel";
 import { Inf4RadarDisplay } from "@/components/Inf4RadarDisplay";
-import { HardwareDevelopmentPanel } from "@/components/HardwareDevelopmentPanel";
-import { GitHubMetricSignalsPanel } from "@/components/GitHubMetricSignalsPanel";
-import { ProductionOperationsPanel } from "@/components/ProductionOperationsPanel";
-import {
-  ManusMusicUploadPanel,
-  type ManusUploadStage,
-} from "@/components/ManusMusicUploadPanel";
+import { SignalFlowVisualization } from "@/components/SignalFlowVisualization";
+import type { ManusUploadStage } from "@/components/ManusMusicUploadPanel";
 import {
   getAdjacentStationProgramme,
   getStationProgramme,
@@ -39,7 +22,7 @@ import {
   withWorkspaceView,
 } from "@shared/workspaceNavigation";
 import { isExpectedOperationAbort } from "@/lib/operationAbort";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   AlertTriangle,
@@ -74,6 +57,84 @@ import {
   Zap,
 } from "lucide-react";
 import { toast } from "sonner";
+
+const DevicesSoundAccessPanel = lazy(() =>
+  import("@/components/DevicesSoundAccessPanel").then(module => ({
+    default: module.DevicesSoundAccessPanel,
+  }))
+);
+const ProductReadinessPanel = lazy(() =>
+  import("@/components/ProductReadinessPanel").then(module => ({
+    default: module.ProductReadinessPanel,
+  }))
+);
+const AIProjectFallbackPanel = lazy(() =>
+  import("@/components/AIProjectFallbackPanel").then(module => ({
+    default: module.AIProjectFallbackPanel,
+  }))
+);
+const AudioSourceHistoryPanel = lazy(() =>
+  import("@/components/AudioSourceHistoryPanel").then(module => ({
+    default: module.AudioSourceHistoryPanel,
+  }))
+);
+const RadioStationPanel = lazy(() =>
+  import("@/components/RadioStationPanel").then(module => ({
+    default: module.RadioStationPanel,
+  }))
+);
+const CompatibilityFeedbackPanel = lazy(() =>
+  import("@/components/CompatibilityFeedbackPanel").then(module => ({
+    default: module.CompatibilityFeedbackPanel,
+  }))
+);
+const CompatibilityReviewPanel = lazy(() =>
+  import("@/components/CompatibilityReviewPanel").then(module => ({
+    default: module.CompatibilityReviewPanel,
+  }))
+);
+const HardwareDevelopmentPanel = lazy(() =>
+  import("@/components/HardwareDevelopmentPanel").then(module => ({
+    default: module.HardwareDevelopmentPanel,
+  }))
+);
+const GitHubMetricSignalsPanel = lazy(() =>
+  import("@/components/GitHubMetricSignalsPanel").then(module => ({
+    default: module.GitHubMetricSignalsPanel,
+  }))
+);
+const ProductionOperationsPanel = lazy(() =>
+  import("@/components/ProductionOperationsPanel").then(module => ({
+    default: module.ProductionOperationsPanel,
+  }))
+);
+const ManusMusicUploadPanel = lazy(() =>
+  import("@/components/ManusMusicUploadPanel").then(module => ({
+    default: module.ManusMusicUploadPanel,
+  }))
+);
+
+function WorkspaceModuleBoundary({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense
+      fallback={
+        <section className="workspace-module-loading panel" aria-live="polite">
+          <span>LOADING WORKSPACE MODULE</span>
+          <strong>{label}</strong>
+          <small>The selected workspace is loading on demand.</small>
+        </section>
+      }
+    >
+      {children}
+    </Suspense>
+  );
+}
 
 const AUDIO_TRACKS = [
   {
@@ -2146,7 +2207,8 @@ export default function Home() {
       );
     };
     window.addEventListener("popstate", syncWorkspaceFromHistory);
-    return () => window.removeEventListener("popstate", syncWorkspaceFromHistory);
+    return () =>
+      window.removeEventListener("popstate", syncWorkspaceFromHistory);
   }, []);
   const returnToStart = () => {
     selectWorkspace("Arrangement");
@@ -2458,6 +2520,12 @@ export default function Home() {
               return next;
             })
           }
+        />
+        <SignalFlowVisualization
+          isPlaying={isPlaying}
+          channel={channelStatus}
+          mixBus={mixBusStatus}
+          output={stereoStatus}
         />
 
         <div id="workspace-content" className="content-scroll" tabIndex={-1}>
@@ -3474,25 +3542,33 @@ export default function Home() {
             />
           )}
           {activeView === "Generator" && (
-            <ManusMusicUploadPanel
-              authenticated={isAuthenticated}
-              pending={uploadingManusMusic || uploadManusMusic.isPending}
-              uploadStage={manusUploadStage}
-              assets={assetsQuery.data ?? []}
-              onLogin={startLogin}
-              onUpload={file => void handleManusMusicUpload(file)}
-              onPlay={playManusMusicAsset}
-            />
+            <WorkspaceModuleBoundary label="Generation workspace">
+              <ManusMusicUploadPanel
+                authenticated={isAuthenticated}
+                pending={uploadingManusMusic || uploadManusMusic.isPending}
+                uploadStage={manusUploadStage}
+                assets={assetsQuery.data ?? []}
+                onLogin={startLogin}
+                onUpload={file => void handleManusMusicUpload(file)}
+                onPlay={playManusMusicAsset}
+              />
+            </WorkspaceModuleBoundary>
           )}
-          {activeView === "Signals" && <GitHubMetricSignalsPanel />}
+          {activeView === "Signals" && (
+            <WorkspaceModuleBoundary label="Signals workspace">
+              <GitHubMetricSignalsPanel />
+            </WorkspaceModuleBoundary>
+          )}
           {activeView === "Operations" && (
-            <ProductionOperationsPanel
-              duration={duration}
-              isPlaying={isPlaying}
-              channel={channelStatus}
-              mixBus={mixBusStatus}
-              output={stereoStatus}
-            />
+            <WorkspaceModuleBoundary label="Production operations workspace">
+              <ProductionOperationsPanel
+                duration={duration}
+                isPlaying={isPlaying}
+                channel={channelStatus}
+                mixBus={mixBusStatus}
+                output={stereoStatus}
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Assets" && (
             <AssetFocusPanel
@@ -3502,50 +3578,54 @@ export default function Home() {
             />
           )}
           {activeView === "History" && (
-            <AudioSourceHistoryPanel
-              items={sourceHistoryQuery.data ?? []}
-              authenticated={isAuthenticated}
-              pendingId={historyPendingId}
-              onLogin={startLogin}
-              onRestore={assetId => void restoreSourceVersion(assetId)}
-              onDelete={assetId => void deleteSourceVersion(assetId)}
-            />
+            <WorkspaceModuleBoundary label="Source history workspace">
+              <AudioSourceHistoryPanel
+                items={sourceHistoryQuery.data ?? []}
+                authenticated={isAuthenticated}
+                pendingId={historyPendingId}
+                onLogin={startLogin}
+                onRestore={assetId => void restoreSourceVersion(assetId)}
+                onDelete={assetId => void deleteSourceVersion(assetId)}
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Radio" && (
-            <RadioStationPanel
-              stations={parkwayRadioStations}
-              selectedStationId={radioStationId}
-              selectedProgrammeId={radioProgrammeId}
-              savedStationIds={(savedRadioQuery.data ?? []).map(
-                item => item.stationId
-              )}
-              authenticated={isAuthenticated}
-              isPlaying={radioActive && isPlaying}
-              volume={radioVolume}
-              currentTime={currentTime}
-              duration={duration}
-              pending={
-                saveRadioStation.isPending || removeRadioStation.isPending
-              }
-              onLogin={startLogin}
-              onSelectStation={selectRadioStation}
-              onSelectProgramme={selectRadioProgramme}
-              onTogglePlay={toggleRadioPlayback}
-              onPrevious={() =>
-                stepRadioProgramme(-1, radioActive && isPlaying)
-              }
-              onNext={() => stepRadioProgramme(1, radioActive && isPlaying)}
-              onVolumeChange={changeRadioVolume}
-              onSave={stationId =>
-                void saveRadioStation.mutateAsync({ stationId })
-              }
-              onRemove={stationId =>
-                void removeRadioStation.mutateAsync({ stationId })
-              }
-            />
+            <WorkspaceModuleBoundary label="Original audio workspace">
+              <RadioStationPanel
+                stations={parkwayRadioStations}
+                selectedStationId={radioStationId}
+                selectedProgrammeId={radioProgrammeId}
+                savedStationIds={(savedRadioQuery.data ?? []).map(
+                  item => item.stationId
+                )}
+                authenticated={isAuthenticated}
+                isPlaying={radioActive && isPlaying}
+                volume={radioVolume}
+                currentTime={currentTime}
+                duration={duration}
+                pending={
+                  saveRadioStation.isPending || removeRadioStation.isPending
+                }
+                onLogin={startLogin}
+                onSelectStation={selectRadioStation}
+                onSelectProgramme={selectRadioProgramme}
+                onTogglePlay={toggleRadioPlayback}
+                onPrevious={() =>
+                  stepRadioProgramme(-1, radioActive && isPlaying)
+                }
+                onNext={() => stepRadioProgramme(1, radioActive && isPlaying)}
+                onVolumeChange={changeRadioVolume}
+                onSave={stationId =>
+                  void saveRadioStation.mutateAsync({ stationId })
+                }
+                onRemove={stationId =>
+                  void removeRadioStation.mutateAsync({ stationId })
+                }
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Product" && (
-            <>
+            <WorkspaceModuleBoundary label="Product readiness workspace">
               <ProductReadinessPanel
                 onOpenPerformance={() => selectWorkspace("Performance")}
                 onOpenMixer={() => selectWorkspace("Mixer")}
@@ -3561,66 +3641,74 @@ export default function Home() {
                 onToggle={() => setAutoFallbackEnabled(value => !value)}
                 onCreate={() => void requestProjectFallback("media-error")}
               />
-            </>
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Devices" && (
-            <DevicesSoundAccessPanel
-              registrations={hardwareQuery.data ?? []}
-              authenticated={isAuthenticated}
-              draft={hardwareDraft}
-              setDraft={setHardwareDraft}
-              consentAcknowledged={soundAccessConsent}
-              setConsentAcknowledged={setSoundAccessConsent}
-              pending={
-                registerHardware.isPending ||
-                activateHardware.isPending ||
-                revokeHardware.isPending
-              }
-              onLogin={startLogin}
-              onRegister={submitHardwareRegistration}
-              onActivate={activateHardwareSoundAccess}
-              onRevoke={registrationId =>
-                void revokeHardware.mutateAsync({ registrationId })
-              }
-            />
+            <WorkspaceModuleBoundary label="Device access workspace">
+              <DevicesSoundAccessPanel
+                registrations={hardwareQuery.data ?? []}
+                authenticated={isAuthenticated}
+                draft={hardwareDraft}
+                setDraft={setHardwareDraft}
+                consentAcknowledged={soundAccessConsent}
+                setConsentAcknowledged={setSoundAccessConsent}
+                pending={
+                  registerHardware.isPending ||
+                  activateHardware.isPending ||
+                  revokeHardware.isPending
+                }
+                onLogin={startLogin}
+                onRegister={submitHardwareRegistration}
+                onActivate={activateHardwareSoundAccess}
+                onRevoke={registrationId =>
+                  void revokeHardware.mutateAsync({ registrationId })
+                }
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Develop" && (
-            <HardwareDevelopmentPanel
-              onOpenStudio={() => selectWorkspace("Studio")}
-            />
+            <WorkspaceModuleBoundary label="Development workspace">
+              <HardwareDevelopmentPanel
+                onOpenStudio={() => selectWorkspace("Studio")}
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Feedback" && (
-            <CompatibilityFeedbackPanel
-              pending={submitCompatibilityFeedback.isPending}
-              onSubmit={async draft => {
-                await submitCompatibilityFeedback.mutateAsync(draft);
-              }}
-            />
+            <WorkspaceModuleBoundary label="Compatibility feedback workspace">
+              <CompatibilityFeedbackPanel
+                pending={submitCompatibilityFeedback.isPending}
+                onSubmit={async draft => {
+                  await submitCompatibilityFeedback.mutateAsync(draft);
+                }}
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Review" && user?.role === "admin" && (
-            <CompatibilityReviewPanel
-              reports={compatibilityReviewQuery.data ?? []}
-              reviewers={compatibilityReviewersQuery.data ?? []}
-              events={compatibilityHistoryQuery.data ?? []}
-              selectedId={selectedFeedbackId}
-              pending={
-                assignCompatibilityReview.isPending ||
-                decideCompatibilityReview.isPending
-              }
-              onSelect={setSelectedFeedbackId}
-              onAssign={(feedbackId, reviewerUserId) =>
-                void assignCompatibilityReview.mutateAsync({
-                  feedbackId,
-                  reviewerUserId,
-                })
-              }
-              onDecide={(feedbackId, event) =>
-                void decideCompatibilityReview.mutateAsync({
-                  feedbackId,
-                  event,
-                })
-              }
-            />
+            <WorkspaceModuleBoundary label="Compatibility review workspace">
+              <CompatibilityReviewPanel
+                reports={compatibilityReviewQuery.data ?? []}
+                reviewers={compatibilityReviewersQuery.data ?? []}
+                events={compatibilityHistoryQuery.data ?? []}
+                selectedId={selectedFeedbackId}
+                pending={
+                  assignCompatibilityReview.isPending ||
+                  decideCompatibilityReview.isPending
+                }
+                onSelect={setSelectedFeedbackId}
+                onAssign={(feedbackId, reviewerUserId) =>
+                  void assignCompatibilityReview.mutateAsync({
+                    feedbackId,
+                    reviewerUserId,
+                  })
+                }
+                onDecide={(feedbackId, event) =>
+                  void decideCompatibilityReview.mutateAsync({
+                    feedbackId,
+                    event,
+                  })
+                }
+              />
+            </WorkspaceModuleBoundary>
           )}
           {activeView === "Contact" && (
             <ContactPanel

@@ -36,3 +36,6 @@
 - [x] Define an original in-app production operations centre with explicit user-initiated workflow states, media-health visibility, and no external platform imitation or integration claims.
 - [x] Build practical production controls for project readiness, audio route status, private review queue visibility, and generation-readiness messaging without increasing service generation capacity or triggering background work.
 - [x] Test production-centre state transitions, responsive control access, and media/rights boundaries; then commit the update.
+- [x] Audit the main workspace import graph and choose safe lazy-load boundaries that preserve authenticated flows and direct workspace navigation.
+- [x] Implement lazy-loaded workspace modules with accessible loading states and add an original interactive IN → CH → BUS → OUT signal-flow visualisation with explicit ethical boundaries.
+- [x] Run the current TypeScript and full automated test suite, verify workspace loading and responsive visualisation behavior, then commit the update.
