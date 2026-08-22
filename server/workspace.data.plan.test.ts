@@ -11,6 +11,7 @@ describe("PARKWAY workspace data plan", () => {
     expect(workspaceDataPlan("Radio", false).savedStations).toBe(true);
     expect(workspaceDataPlan("Repository", false).repositoryMetrics).toBe(true);
     expect(workspaceDataPlan("Settings", false)).toEqual({ projectAssets: false, jobs: false, samplerOutputs: false, sourceHistory: false, savedStations: false, repositoryMetrics: false, hardwareRegistrations: false, compatibilityReview: false });
+    expect(workspaceDataPlan("Engineering", false)).toEqual({ projectAssets: false, jobs: false, samplerOutputs: false, sourceHistory: false, savedStations: false, repositoryMetrics: false, hardwareRegistrations: false, compatibilityReview: false });
     expect(workspaceDataPlan("Devices", false).hardwareRegistrations).toBe(true);
     expect(workspaceDataPlan("Review", false).compatibilityReview).toBe(false);
     expect(workspaceDataPlan("Review", true).compatibilityReview).toBe(true);

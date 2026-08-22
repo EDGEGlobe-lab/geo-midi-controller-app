@@ -1,4 +1,4 @@
-export type ParkwayWorkspace = "Arrangement" | "Mixer" | "Piano Roll" | "Performance" | "Studio" | "Catalogue" | "Repository" | "Settings" | "Generator" | "Radio" | "Product" | "Devices" | "Develop" | "Assets" | "History" | "Feedback" | "Review" | "Contact";
+export type ParkwayWorkspace = "Arrangement" | "Mixer" | "Piano Roll" | "Performance" | "Studio" | "Catalogue" | "Repository" | "Settings" | "Engineering" | "Generator" | "Radio" | "Product" | "Devices" | "Develop" | "Assets" | "History" | "Feedback" | "Review" | "Contact";
 
 export function workspaceDataPlan(activeView: ParkwayWorkspace, isAdmin: boolean) {
   const usesProjectAssets = activeView === "Studio" || activeView === "Catalogue" || activeView === "Generator" || activeView === "Assets";

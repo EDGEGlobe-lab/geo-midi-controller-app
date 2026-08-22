@@ -308,7 +308,7 @@
 - [x] Audit every registered PARKWAY WAV asset for a direct `/manus-storage/` project-owned URL, browser-playable audio MIME type, and absence of CloudFront or other external-host dependency.
 - [x] Repair the catalogue selector and media-element source resolver so direct WAV project-storage keys are normalized to same-origin `/manus-storage/` browser paths before entering Stereo In routing.
 - [x] Add regression coverage for direct project-owned WAV source resolution and no-external-host playback URLs.
-- [ ] Validate direct catalogue playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair.
+- [x] Validate direct catalogue playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair; the user confirmed timer movement, active route lamps, and audible Catalogue playback.
 
 ## Through-Composed Synthetic Vocal Catalogue
 
@@ -325,14 +325,23 @@
 - [x] Audit the browser DAW output graph for safe built-in phone and laptop speaker operation alongside system-selected compatible outputs, without claiming control of external device hardware or volume.
 - [x] Preserve bounded bass and loudness-preserving gain staging with truthful browser-derived metering, user-gesture audio unlock, the 50% listening floor, and an explicit device-selected-output boundary.
 - [x] Add regression coverage for built-in-speaker recovery, direct project-WAV routing, Stereo In routing, and bass-profile limits.
-- [ ] Validate the listening controls on iPhone-sized and desktop layouts, document system-output boundaries, and publish the playback-quality repair.
+- [x] Validate the listening controls on iPhone-sized and desktop layouts, document system-output boundaries, and publish the playback-quality repair.
 
 ## Top Transport and Radio No-Sound Repair
 
 - [x] Reproduce and trace the reported no-sound state affecting the top transport, radio player, and other non-catalogue audio controls with browser logs and source-health checks.
 - [x] Repair the user-gesture playback sequence so top transport and radio media start before asynchronous audio-graph work, retaining the shared Stereo In → Channel Rack → Mix Bus → Stereo Out route.
 - [x] Add regression coverage for gesture-preserving top transport/radio playback, direct source health, and routing recovery without external-host dependency.
-- [ ] Validate audible transport and radio playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair.
+- [x] Validate audible transport and radio playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair; the user confirmed timer movement, active route lamps, and audible Radio playback.
+
+## Independent Engineering Centre and Generation Capacity Status
+
+- [x] Define a PARKWAY-owned Engineering Centre that uses generic local workflow concepts only and does not integrate with, impersonate, or reuse branding from Unreal Engine, Kestra, WWE, or YouTube Music.
+- [x] Add a browser-local Engineering Centre workspace with explicit production, systems, release-review, and archive-planning lanes that do not control third-party services or external hardware.
+- [x] Provide user-initiated local stage controls with transparent states; do not start audio generation, playback, uploads, background jobs, or external actions automatically.
+- [x] Add a clear generation-capacity status surface that preserves the verified 13 available synthetic vocal masters, identifies tracks 14–20 as unavailable until independently rendered, and never fabricates capacity or substitutes loops.
+- [x] Add data-isolation and workflow-state regression coverage, then validate desktop and iPhone layouts, typecheck, tests, and production build.
+- [x] Publish the Engineering Centre update and document the current browser-local and generation-capacity boundaries.
 
 ## User-Confirmed Inactive Audio Route Repair
 
@@ -340,7 +349,7 @@
 - [x] Repair the shared Web Audio graph so source playback prepares exactly one route through Stereo In, selected Channel Rack strip, Mix Bus, post-master analyser, and destination before media play, without unsafe initial disconnects.
 - [x] Update health lamps only from successful real node connections and post-route activation; do not simulate route or meter movement.
 - [x] Add regression coverage for successful first route, selected-track reroute, transport/radio start activation ordering, failure transition, and recovery.
-- [ ] Validate live route health and audible media on the user’s device after publishing the repair.
+- [x] Validate live route health and audible media on the user’s device after publishing the repair; the user confirmed the three requested live checks were working accordingly.
 
 ## Truthful Live GitHub Repository Metrics Engine
 
