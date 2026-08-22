@@ -305,9 +305,9 @@
 
 ## Direct PARKWAY WAV Playback Without External CDN Transfer
 
-- [ ] Audit every registered PARKWAY WAV asset for a direct `/manus-storage/` project-owned URL, browser-playable audio MIME type, and absence of CloudFront or other external-host dependency.
-- [ ] Repair any catalogue selector, media-element, or Stereo In routing path that prevents a direct WAV project asset from playing in the browser DAW.
-- [ ] Add regression coverage for direct project-owned WAV source resolution, source health, and no-external-host playback URLs.
+- [x] Audit every registered PARKWAY WAV asset for a direct `/manus-storage/` project-owned URL, browser-playable audio MIME type, and absence of CloudFront or other external-host dependency.
+- [x] Repair the catalogue selector and media-element source resolver so direct WAV project-storage keys are normalized to same-origin `/manus-storage/` browser paths before entering Stereo In routing.
+- [x] Add regression coverage for direct project-owned WAV source resolution and no-external-host playback URLs.
 - [ ] Validate direct catalogue playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair.
 
 ## Through-Composed Synthetic Vocal Catalogue
@@ -322,9 +322,9 @@
 
 ## Built-In and System Speaker Playback Quality
 
-- [ ] Audit the browser DAW output graph for safe built-in phone and laptop speaker operation alongside system-selected compatible outputs, without claiming control of external device hardware or volume.
-- [ ] Strengthen bounded bass and loudness-preserving gain staging while retaining truthful browser-derived metering, user-gesture audio unlock, and the 50% listening floor.
-- [ ] Add regression coverage for built-in-speaker recovery, system-output-safe routing, and bass-profile limits.
+- [x] Audit the browser DAW output graph for safe built-in phone and laptop speaker operation alongside system-selected compatible outputs, without claiming control of external device hardware or volume.
+- [x] Preserve bounded bass and loudness-preserving gain staging with truthful browser-derived metering, user-gesture audio unlock, the 50% listening floor, and an explicit device-selected-output boundary.
+- [x] Add regression coverage for built-in-speaker recovery, direct project-WAV routing, Stereo In routing, and bass-profile limits.
 - [ ] Validate the listening controls on iPhone-sized and desktop layouts, document system-output boundaries, and publish the playback-quality repair.
 
 ## Truthful Live GitHub Repository Metrics Engine
