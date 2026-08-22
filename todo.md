@@ -18,3 +18,7 @@
 - [x] Add a clearly separated, user-initiated external radio-provider handoff that opens a provider destination without embedding, relaying, transmitting, cataloguing, or claiming third-party station access.
 - [x] Test that the radio handoff has no autoplay, no third-party stream URL in the audio player, and no incorrect “live station” representation.
 - [x] Repair disappearing workspace navigation and add an always-available return-to-start control across desktop and mobile layouts.
+- [x] Review the current Signals and workspace controls for high-impact functional gaps after the navigation repair.
+- [x] Add practical Signals workflow improvements for manual refresh feedback, metric focus, and readable active-session status without fabricating live data.
+- [x] Improve persistent workspace recovery controls and keyboard-accessible navigation where needed.
+- [x] Test improved workflows, focus behavior, responsive controls, and GitHub data failure handling; then commit the update.

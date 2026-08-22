@@ -1,5 +1,8 @@
 import { trpc } from "@/lib/trpc";
-import { getMidpointPlanningAlerts } from "@shared/metricPlanningAlerts";
+import {
+  getMidpointPlanningAlerts,
+  getPlanningRangeState,
+} from "@shared/metricPlanningAlerts";
 import {
   Activity,
   BellRing,
@@ -8,6 +11,7 @@ import {
   RefreshCw,
   Target,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 
 const formatCount = new Intl.NumberFormat("en-US", {
   notation: "compact",
@@ -15,6 +19,8 @@ const formatCount = new Intl.NumberFormat("en-US", {
 });
 
 export function GitHubMetricSignalsPanel() {
+  const [focusedMetricId, setFocusedMetricId] = useState<string>("all");
+  const [refreshFeedback, setRefreshFeedback] = useState("");
   const snapshot = trpc.github.repositoryScaleSnapshot.useQuery(undefined, {
     staleTime: 5 * 60_000,
     refetchInterval: 5 * 60_000,
@@ -25,6 +31,23 @@ export function GitHubMetricSignalsPanel() {
     ? getMidpointPlanningAlerts(snapshot.data.metrics)
     : [];
   const reachedAlerts = alerts.filter(alert => alert.reached);
+  const visibleMetrics = useMemo(
+    () =>
+      (snapshot.data?.metrics ?? []).filter(
+        metric => focusedMetricId === "all" || metric.id === focusedMetricId
+      ),
+    [focusedMetricId, snapshot.data?.metrics]
+  );
+
+  async function refreshSignals() {
+    setRefreshFeedback("Refreshing verified GitHub metrics…");
+    const result = await snapshot.refetch();
+    setRefreshFeedback(
+      result.data
+        ? `Verified metrics refreshed at ${new Date(result.data.retrievedAt).toLocaleTimeString()}.`
+        : "GitHub metrics could not be refreshed. You can try again shortly."
+    );
+  }
 
   return (
     <section
@@ -43,7 +66,7 @@ export function GitHubMetricSignalsPanel() {
         </div>
         <button
           className="outline-button outline-small"
-          onClick={() => void snapshot.refetch()}
+          onClick={() => void refreshSignals()}
           disabled={snapshot.isFetching}
         >
           <RefreshCw
@@ -53,11 +76,45 @@ export function GitHubMetricSignalsPanel() {
           {snapshot.isFetching ? "Refreshing…" : "Refresh"}
         </button>
       </div>
+
       <p className="text-sm leading-6 text-muted-foreground">
         Verified values come from GitHub’s public API at refresh time. The
         requested large ranges below are clearly labelled planning targets, not
         generated engagement, live counts, or predictions.
       </p>
+
+      <div
+        className="mt-4 flex flex-wrap items-center gap-2"
+        aria-label="Metric focus controls"
+      >
+        <span className="mr-1 text-[10px] tracking-[0.12em] text-muted-foreground">
+          FOCUS
+        </span>
+        <button
+          className={`outline-button outline-small ${focusedMetricId === "all" ? "border-cyan-300/60 text-cyan-100" : ""}`}
+          onClick={() => setFocusedMetricId("all")}
+          aria-pressed={focusedMetricId === "all"}
+        >
+          All metrics
+        </button>
+        {(snapshot.data?.metrics ?? []).map(metric => (
+          <button
+            key={metric.id}
+            className={`outline-button outline-small ${focusedMetricId === metric.id ? "border-cyan-300/60 text-cyan-100" : ""}`}
+            onClick={() => setFocusedMetricId(metric.id)}
+            aria-pressed={focusedMetricId === metric.id}
+          >
+            {metric.label}
+          </button>
+        ))}
+      </div>
+
+      {refreshFeedback ? (
+        <p className="mt-3 text-xs text-cyan-100" aria-live="polite">
+          {refreshFeedback}
+        </p>
+      ) : null}
+
       <div
         className={`mt-4 flex items-start gap-3 border p-3 text-sm ${reachedAlerts.length ? "border-amber-300/40 bg-amber-300/10 text-amber-100" : "border-cyan-300/20 bg-cyan-300/5 text-cyan-50"}`}
         aria-live="polite"
@@ -85,6 +142,7 @@ export function GitHubMetricSignalsPanel() {
           </p>
         </div>
       </div>
+
       {snapshot.isLoading ? (
         <p className="mt-5 text-sm">Reading public repository metrics…</p>
       ) : null}
@@ -96,7 +154,7 @@ export function GitHubMetricSignalsPanel() {
       {snapshot.data ? (
         <>
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
-            {snapshot.data.metrics.map(metric => (
+            {visibleMetrics.map(metric => (
               <article
                 key={metric.id}
                 className="rounded-none border border-white/10 bg-black/20 p-3"
@@ -123,6 +181,12 @@ export function GitHubMetricSignalsPanel() {
                     alerts.find(alert => alert.id === metric.id)
                       ?.midpointThreshold ?? 0
                   )}
+                </div>
+                <div className="mt-2 text-[10px] tracking-[0.08em] text-muted-foreground">
+                  PLANNING STATUS ·{" "}
+                  {getPlanningRangeState(metric)
+                    .replace("-", " ")
+                    .toUpperCase()}
                 </div>
               </article>
             ))}

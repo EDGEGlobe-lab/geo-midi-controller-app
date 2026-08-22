@@ -11,6 +11,8 @@ export type PlanningAlert = PlanningMetric & {
   reached: boolean;
 };
 
+export type PlanningRangeState = "below-range" | "within-range" | "above-range";
+
 export function midpointThreshold(
   metric: Pick<PlanningMetric, "targetMinimum" | "targetMaximum">
 ) {
@@ -30,4 +32,15 @@ export function getMidpointPlanningAlerts(
       reached: metric.verifiedCount >= midpoint,
     };
   });
+}
+
+export function getPlanningRangeState(
+  metric: Pick<
+    PlanningMetric,
+    "verifiedCount" | "targetMinimum" | "targetMaximum"
+  >
+): PlanningRangeState {
+  if (metric.verifiedCount < metric.targetMinimum) return "below-range";
+  if (metric.verifiedCount > metric.targetMaximum) return "above-range";
+  return "within-range";
 }
