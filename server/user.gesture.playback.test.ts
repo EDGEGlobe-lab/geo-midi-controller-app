@@ -16,4 +16,17 @@ describe("gesture-preserving media playback", () => {
     await expect(startWithinUserGesture(media, async () => false)).resolves.toBe(false);
     expect(media.pause).toHaveBeenCalledTimes(1);
   });
+
+  it("requires a successful source route before media playback begins", async () => {
+    const calls: string[] = [];
+    const media = { play: vi.fn(async () => { calls.push("play"); }), pause: vi.fn() };
+    await expect(startWithinUserGesture(media, async () => true, () => { calls.push("route"); return true; })).resolves.toBe(true);
+    expect(calls).toEqual(["route", "play"]);
+  });
+
+  it("does not play when source routing cannot be prepared", async () => {
+    const media = { play: vi.fn(async () => undefined), pause: vi.fn() };
+    await expect(startWithinUserGesture(media, async () => true, () => false)).resolves.toBe(false);
+    expect(media.play).not.toHaveBeenCalled();
+  });
 });

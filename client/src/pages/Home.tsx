@@ -559,7 +559,10 @@ export default function Home() {
       // activation after asynchronous AudioContext work and silence playback.
       audio.muted = false;
       audio.volume = radioActive ? radioVolume / 100 : 1;
-      if (!await startWithinUserGesture(audio, enableStereo)) return false;
+      if (!await startWithinUserGesture(audio, enableStereo, () => {
+        const context = ensureAudioGraph();
+        return Boolean(context && routeSourceToTrack(selectedTrack));
+      })) return false;
       setIsPlaying(true);
       setStereoStatus("ready");
       if (successMessage) toast.success(successMessage);
@@ -894,7 +897,7 @@ export default function Home() {
 
   return (
     <main className={`parkway-app ${compactMode ? "compact-mode" : ""}`}>
-      <audio ref={audioRef} src={previewSource} preload="auto" playsInline loop={radioActive ? false : isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); if (radioActive) stepRadioProgramme(1, true); }} onError={() => toast.error(`Audio source failed to load: ${previewLabel}`)} />
+      <audio ref={audioRef} crossOrigin="anonymous" src={previewSource} preload="auto" playsInline loop={radioActive ? false : isLooping} onLoadedMetadata={(event) => setDuration(event.currentTarget.duration)} onTimeUpdate={(event) => setCurrentTime(event.currentTarget.currentTime)} onEnded={() => { setIsPlaying(false); setMeterLevels(Object.fromEntries(tracks.map((track) => [track.id, 0]))); if (radioActive) stepRadioProgramme(1, true); }} onError={() => toast.error(`Audio source failed to load: ${previewLabel}`)} />
       <div className="parkway-grid" />
       {showBrowser && <button className="mobile-nav-scrim" aria-label="Close workspace navigation" onClick={() => setShowBrowser(false)} />}
       <aside id="parkway-workspace-navigation" className={`sidebar ${showBrowser ? "sidebar-open" : "sidebar-collapsed"}`}>

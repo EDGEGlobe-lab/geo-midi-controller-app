@@ -334,6 +334,14 @@
 - [x] Add regression coverage for gesture-preserving top transport/radio playback, direct source health, and routing recovery without external-host dependency.
 - [ ] Validate audible transport and radio playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair.
 
+## User-Confirmed Inactive Audio Route Repair
+
+- [x] Trace why real media starts leave every `IN → CH → BUS → OUT` indicator inactive, including source-node creation, Stereo In routing, channel selection, and status-state sequencing.
+- [x] Repair the shared Web Audio graph so source playback prepares exactly one route through Stereo In, selected Channel Rack strip, Mix Bus, post-master analyser, and destination before media play, without unsafe initial disconnects.
+- [x] Update health lamps only from successful real node connections and post-route activation; do not simulate route or meter movement.
+- [x] Add regression coverage for successful first route, selected-track reroute, transport/radio start activation ordering, failure transition, and recovery.
+- [ ] Validate live route health and audible media on the user’s device after publishing the repair.
+
 ## Truthful Live GitHub Repository Metrics Engine
 
 - [x] Inspect `EDGEGlobe-lab/geo-midi-controller-app` and its current project state using the authenticated GitHub connection; do not overwrite concurrent repository changes.
