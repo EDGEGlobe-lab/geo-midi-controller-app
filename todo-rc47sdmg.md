@@ -148,7 +148,7 @@
 - [x] Add an accessible radio player with play/pause, station switching, volume, now-playing state, and browser user-gesture audio unlock.
 - [x] Add owner-scoped saved-station procedures and UI controls, with authorization tests and no client-side credentials.
 - [x] Verify desktop/mobile radio discovery, playback controls, typecheck, 34 Vitest assertions, production build, and responsive visual review.
-- [ ] Publish the PARKWAY radio workspace and request real-browser audio confirmation.
+- [x] Publish the PARKWAY radio workspace and request real-browser audio confirmation; the user confirmed advancing timer, active route lamps, and audible Radio playback.
 
 ## Cross-Device and Ethical Radio Compatibility
 
@@ -191,7 +191,7 @@
 - [x] Replace the software-display-only Radio workspace with an active programme player, station schedule, episode or track catalogue, and user-gesture playback controls.
 - [x] Keep station listening state and saved stations private to the authenticated user, with clear disclosure that browser playback is not a terrestrial broadcast or third-party service.
 - [x] Add original-audio programme-catalogue tests and verify desktop/mobile station layouts, type checking, 45 passing tests, and the production build.
-- [ ] Add station playback and catalogue tests, validate desktop and mobile operation, publish the release, and request confirmation of real-device listening.
+- [x] Add station playback and catalogue tests, validate desktop and mobile operation, publish the release, and request confirmation of real-device listening; the user confirmed advancing timer, active route lamps, and audible Radio playback.
 
 ## PARKWAY Hardware Development Workspace
 
@@ -214,7 +214,7 @@
 - [x] Repair the user-gesture stereo unlock and original-audio Radio practice-session playback path so audible in-browser listening is the central outcome, not a display-only concept.
 - [x] Keep the no-physical-transmitter and no-unlicensed-RF-reception boundary explicit while removing concept-only language from the experiential browser practice flow.
 - [x] Add source URL regression coverage, verify audio media types, run typecheck, 48 tests, production build, and desktop/mobile practice-route review.
-- [ ] Publish the audible-practice repair and request a fresh real-device stereo confirmation.
+- [x] Publish the audible-practice repair and request a fresh real-device stereo confirmation; the user confirmed advancing timer, active route lamps, and audible browser playback.
 
 ## Downloadable Local-Flashing Practice Scaffolds
 
@@ -342,6 +342,19 @@
 - [x] Add a clear generation-capacity status surface that preserves the verified 13 available synthetic vocal masters, identifies tracks 14–20 as unavailable until independently rendered, and never fabricates capacity or substitutes loops.
 - [x] Add data-isolation and workflow-state regression coverage, then validate desktop and iPhone layouts, typecheck, tests, and production build.
 - [x] Publish the Engineering Centre update and document the current browser-local and generation-capacity boundaries.
+
+## Playback Verification Evidence Follow-Up
+
+- [x] Record an explicit desktop layout validation for the built-in and system speaker playback-quality repair.
+- [x] Record desktop and iPhone-sized route-layout validation for direct Catalogue playback through Stereo In → Channel Rack → Mix Bus → Stereo Out.
+- [ ] Obtain and record a distinct top-transport playback check for timer movement, active route lamps, and audible sound, alongside desktop and iPhone-sized route-layout validation.
+
+## Truthful Signal Visualisation Upgrade
+
+- [x] Define an original PARKWAY signal-visualisation language for IN → CH → BUS → OUT, with clear deontology/disclosure copy and no claim of AI analysis, external discovery, or generated video.
+- [x] Add an accessible browser-local visualisation that derives all stages only from actual Stereo In, Channel Rack, Mix Bus, Stereo Out, and browser-meter state.
+- [x] Preserve the confirmed shared audio graph and ensure the visual layer cannot create an AudioContext, media source, playback action, or output route.
+- [x] Add route-state regression coverage, validate desktop and iPhone layouts, run typecheck/tests/build, and publish the visualisation update.
 
 ## User-Confirmed Inactive Audio Route Repair
 
