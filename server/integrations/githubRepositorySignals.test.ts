@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import {
+  fetchGitHubRepositoryScaleSnapshot,
   fetchGitHubRepositorySignals,
   fetchGitHubRepositorySnapshot,
 } from "./githubRepositorySignals";
@@ -147,5 +148,52 @@ describe("GitHub repository signals integration", () => {
     await expect(
       fetchGitHubRepositorySignals(target, { fetchImplementation })
     ).rejects.toThrow("GitHub REST request failed (404 Not Found): Not Found");
+  });
+
+  it("keeps verified branch and tag totals separate from configured target ranges", async () => {
+    const repository = {
+      full_name: "EDGEGlobe-lab/geo-midi-controller-app",
+      html_url: "https://github.com/EDGEGlobe-lab/geo-midi-controller-app",
+      description: null,
+      homepage: null,
+      archived: false,
+      fork: false,
+      license: null,
+      default_branch: "main",
+      language: "TypeScript",
+      topics: [],
+      stargazers_count: 8,
+      forks_count: 4,
+      subscribers_count: 2,
+      open_issues_count: 0,
+      created_at: "2026-08-20T00:00:00Z",
+      updated_at: "2026-08-21T00:00:00Z",
+      pushed_at: null,
+    };
+    const snapshot = await fetchGitHubRepositoryScaleSnapshot(target, {
+      fetchImplementation: createFetchMock([
+        new Response(JSON.stringify(repository), { status: 200 }),
+        new Response(JSON.stringify([{}]), {
+          status: 200,
+          headers: { link: '<https://api.github.com/x?page=17>; rel="last"' },
+        }),
+        new Response(JSON.stringify([{}]), {
+          status: 200,
+          headers: { link: '<https://api.github.com/x?page=9>; rel="last"' },
+        }),
+      ]),
+    });
+    expect(
+      snapshot.metrics.find(metric => metric.id === "stars")?.verifiedCount
+    ).toBe(8);
+    expect(
+      snapshot.metrics.find(metric => metric.id === "stars")?.targetMinimum
+    ).toBe(5_000);
+    expect(
+      snapshot.metrics.find(metric => metric.id === "branches")?.verifiedCount
+    ).toBe(17);
+    expect(
+      snapshot.metrics.find(metric => metric.id === "tags")?.verifiedCount
+    ).toBe(9);
   });
 });

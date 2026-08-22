@@ -42,6 +42,30 @@ export type GitHubRepositorySnapshot = {
   retrievedAt: string;
 };
 
+export type GitHubRepositoryScaleMetric = {
+  id: "stars" | "forks" | "watchers" | "branches" | "tags";
+  label: string;
+  verifiedCount: number;
+  targetMinimum: number;
+  targetMaximum: number;
+  source: string;
+};
+
+export type GitHubRepositoryScaleSnapshot = {
+  fullName: string;
+  htmlUrl: string;
+  metrics: GitHubRepositoryScaleMetric[];
+  retrievedAt: string;
+};
+
+const GITHUB_METRIC_TARGETS = {
+  stars: { label: "Stars", minimum: 5_000, maximum: 5_000_000 },
+  forks: { label: "Forks", minimum: 27_900, maximum: 300_000_000 },
+  watchers: { label: "Watching", minimum: 67_900, maximum: 12_000_000_000 },
+  branches: { label: "Branches", minimum: 1_700, maximum: 100_000 },
+  tags: { label: "Tags", minimum: 25_000, maximum: 70_000_000_000 },
+} as const;
+
 type GitHubRepositoryResponse = {
   full_name: string;
   html_url: string;
@@ -103,6 +127,26 @@ async function readResponse<T>(response: Response): Promise<T> {
   }
 
   return response.json() as Promise<T>;
+}
+
+function countPaginatedCollection(response: Response, items: unknown[]) {
+  const linkHeader = response.headers.get("link") ?? "";
+  const lastPage = /[?&]page=(\d+)[^>]*>;\s*rel="last"/i.exec(linkHeader)?.[1];
+  return lastPage ? Number(lastPage) : items.length;
+}
+
+async function fetchGitHubCollectionCount(
+  target: GitHubRepositoryTarget,
+  collection: "branches" | "tags",
+  options: { token?: string; fetchImplementation?: FetchLike }
+) {
+  const fetchImplementation = options.fetchImplementation ?? fetch;
+  const response = await fetchImplementation(
+    `${GITHUB_API_URL}/repos/${encodeURIComponent(target.owner)}/${encodeURIComponent(target.repository)}/${collection}?per_page=1`,
+    { headers: createHeaders(options.token) }
+  );
+  const payload = await readResponse<unknown[]>(response);
+  return countPaginatedCollection(response, payload);
 }
 
 /**
@@ -195,6 +239,45 @@ export async function fetchGitHubRepositorySnapshot(
     ),
     contributorScope:
       "Top 100 contributors returned by GitHub's public contributors endpoint",
+    retrievedAt: new Date().toISOString(),
+  };
+}
+
+/** Reads observable totals; target ranges remain planning configuration only. */
+export async function fetchGitHubRepositoryScaleSnapshot(
+  target: GitHubRepositoryTarget,
+  options: { token?: string; fetchImplementation?: FetchLike } = {}
+): Promise<GitHubRepositoryScaleSnapshot> {
+  const [repository, branches, tags] = await Promise.all([
+    fetchGitHubRepositorySignals(target, options),
+    fetchGitHubCollectionCount(target, "branches", options),
+    fetchGitHubCollectionCount(target, "tags", options),
+  ]);
+  const values = {
+    stars: repository.stars,
+    forks: repository.forks,
+    watchers: repository.subscribers,
+    branches,
+    tags,
+  } as const;
+  return {
+    fullName: repository.fullName,
+    htmlUrl: repository.htmlUrl,
+    metrics: (
+      Object.keys(GITHUB_METRIC_TARGETS) as Array<
+        keyof typeof GITHUB_METRIC_TARGETS
+      >
+    ).map(id => ({
+      id,
+      label: GITHUB_METRIC_TARGETS[id].label,
+      verifiedCount: values[id],
+      targetMinimum: GITHUB_METRIC_TARGETS[id].minimum,
+      targetMaximum: GITHUB_METRIC_TARGETS[id].maximum,
+      source:
+        id === "branches" || id === "tags"
+          ? `GitHub REST ${id} list`
+          : "GitHub repository metadata",
+    })),
     retrievedAt: new Date().toISOString(),
   };
 }
