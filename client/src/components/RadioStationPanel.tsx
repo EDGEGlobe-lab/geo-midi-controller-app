@@ -15,6 +15,7 @@ import {
   type ParkwayRadioStation,
 } from "@shared/radioStationCatalog";
 import { externalRadioProviderHandoff } from "@shared/externalRadioProviderHandoff";
+import { radioTransmissionReadiness } from "@shared/radioTransmissionReadiness";
 
 const formatStationTime = (value: number) =>
   `${Math.floor(value / 60)
@@ -110,6 +111,35 @@ export function RadioStationPanel({
           source is declared as PARKWAY original audio.
         </p>
       </div>
+      <section
+        className="radio-readiness-gate"
+        aria-label="Future licensed transmission readiness"
+      >
+        <div>
+          <strong>
+            Transmission status: disabled pending independent approvals
+          </strong>
+          <small>
+            Future live service requires an authorised operator, applicable
+            transmission authority, a music-rights model, written provider
+            agreement, and human launch approval.
+          </small>
+        </div>
+        <ul>
+          {radioTransmissionReadiness.map(gate => (
+            <li key={gate.id}>
+              {gate.label} <span>REQUIRED</span>
+            </li>
+          ))}
+        </ul>
+        <a
+          href="https://github.com/EDGEGlobe-lab/geo-midi-controller-app/blob/Aron-Ranger-Host-PPM-Volt/docs/broadcast-licensing-readiness.md"
+          target="_blank"
+          rel="noreferrer"
+        >
+          Read readiness brief <ExternalLink size={12} />
+        </a>
+      </section>
       <div className="radio-provider-handoff">
         <div>
           <strong>Open a licensed radio provider</strong>

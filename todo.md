@@ -22,3 +22,11 @@
 - [x] Add practical Signals workflow improvements for manual refresh feedback, metric focus, and readable active-session status without fabricating live data.
 - [x] Improve persistent workspace recovery controls and keyboard-accessible navigation where needed.
 - [x] Test improved workflows, focus behavior, responsive controls, and GitHub data failure handling; then commit the update.
+- [ ] Verify the deployed Signals workspace displays live GitHub metrics with the verified-versus-target boundary.
+- [ ] Verify direct navigation back to the start menu in the deployed application.
+- [ ] Re-run TypeScript and the full automated suite, confirming all 60 tests pass at the current revision.
+- [ ] Verify the deployed radio workspace clearly separates original browser audio from any external provider handoff and does not represent a third-party transmission relay.
+- [ ] Verify user-initiated original-audio controls, no-autoplay behavior, and the external-provider handoff boundary in the deployed interface.
+- [x] Prepare a licensing, rights, and provider-integration readiness package for a qualified broadcast operator; do not acquire licences, enter contracts, embed third-party channels, or enable relay without verified authority and agreements.
+- [x] Add clear in-product readiness messaging that distinguishes current original browser audio from any future licensed transmission or provider integration.
+- [x] Validate the no-relay boundary and document the required legal, technical, and provider approval gates.
