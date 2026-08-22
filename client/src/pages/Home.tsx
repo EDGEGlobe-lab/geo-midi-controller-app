@@ -23,6 +23,7 @@ import { GitHubRepositoryMetricsPanel } from "@/components/GitHubRepositoryMetri
 import { Inf4RadarDisplay } from "@/components/Inf4RadarDisplay";
 import { HardwareDevelopmentPanel } from "@/components/HardwareDevelopmentPanel";
 import { GitHubMetricSignalsPanel } from "@/components/GitHubMetricSignalsPanel";
+import { ProductionOperationsPanel } from "@/components/ProductionOperationsPanel";
 import {
   ManusMusicUploadPanel,
   type ManusUploadStage,
@@ -2215,6 +2216,7 @@ export default function Home() {
                 { label: "Studio", icon: Sparkles },
                 { label: "Generator", icon: Waves },
                 { label: "Signals", icon: Activity },
+                { label: "Operations", icon: Gauge },
                 { label: "Radio", icon: Radio },
                 { label: "Product", icon: Gauge },
                 { label: "Devices", icon: HardDrive },
@@ -3483,6 +3485,15 @@ export default function Home() {
             />
           )}
           {activeView === "Signals" && <GitHubMetricSignalsPanel />}
+          {activeView === "Operations" && (
+            <ProductionOperationsPanel
+              duration={duration}
+              isPlaying={isPlaying}
+              channel={channelStatus}
+              mixBus={mixBusStatus}
+              output={stereoStatus}
+            />
+          )}
           {activeView === "Assets" && (
             <AssetFocusPanel
               assets={assetsQuery.data ?? []}

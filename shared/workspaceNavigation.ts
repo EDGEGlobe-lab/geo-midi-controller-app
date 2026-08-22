@@ -6,6 +6,7 @@ export const workspaceViews = [
   "Studio",
   "Generator",
   "Signals",
+  "Operations",
   "Radio",
   "Product",
   "Devices",

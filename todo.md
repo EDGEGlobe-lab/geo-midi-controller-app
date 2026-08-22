@@ -33,3 +33,6 @@
 - [x] Audit navigation, Signals, audio, accessibility, performance, and maintainability for the highest-impact reliability improvements.
 - [x] Implement focused quality improvements that preserve user-initiated playback, verified metrics, and existing external-provider boundaries.
 - [x] Test accessibility, responsive navigation, performance-sensitive paths, and regressions; then commit the improvement update.
+- [x] Define an original in-app production operations centre with explicit user-initiated workflow states, media-health visibility, and no external platform imitation or integration claims.
+- [x] Build practical production controls for project readiness, audio route status, private review queue visibility, and generation-readiness messaging without increasing service generation capacity or triggering background work.
+- [x] Test production-centre state transitions, responsive control access, and media/rights boundaries; then commit the update.
