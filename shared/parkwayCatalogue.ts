@@ -76,7 +76,19 @@ export const catalogueAssetTags = (track: ParkwayCatalogueTrack) => [
 ];
 
 export const parkwaySyntheticVocalVariants: ParkwaySyntheticVocalVariant[] = [
-  { trackId: "parkway-01", storageKey: "parkway-night-drive-continuum-synthetic-vocal-master_7f730812.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-01", storageKey: "parkway-night-drive-continuum-through-composed-vocal-master_e34462dc.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-02", storageKey: "parkway-cyan-transit-through-composed-vocal-master_13fba28b.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-03", storageKey: "parkway-orbital-drift-through-composed-vocal-master_f2ae1171.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-04", storageKey: "parkway-amber-timing-through-composed-vocal-master_16fee47f.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-05", storageKey: "parkway-magenta-vector-through-composed-vocal-master_5e6267d9.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-06", storageKey: "parkway-midnight-raster-through-composed-vocal-master_b061b6d2.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-07", storageKey: "parkway-signal-garden-through-composed-vocal-master_2a2b9dc9.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-08", storageKey: "parkway-luminous-relay-through-composed-vocal-master_c8d24083.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-09", storageKey: "parkway-static-mercy-through-composed-vocal-master_85903da8.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-10", storageKey: "parkway-copper-horizon-through-composed-vocal-master_b827a839.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-11", storageKey: "parkway-velvet-circuit-through-composed-vocal-master_97fc9b84.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-12", storageKey: "parkway-prism-engine-through-composed-vocal-master_b9bd6d8f.wav", durationMs: FIVE_MINUTES_MS },
+  { trackId: "parkway-13", storageKey: "parkway-low-tide-memory-through-composed-vocal-master_dc459c2f.wav", durationMs: FIVE_MINUTES_MS },
 ];
 
 export const syntheticVocalVariantAssetTags = (track: ParkwayCatalogueTrack) => [
@@ -92,6 +104,8 @@ export const syntheticVocalVariantAssetTags = (track: ParkwayCatalogueTrack) => 
   "no-voice-reference-or-cloning",
   "original-lyrics",
   "no-franchise-imitation",
+  "through-composed-five-minute-arrangement",
+  "cartoon-filtered-effects",
   `catalogue-track-${track.number.toString().padStart(2, "0")}`,
 ];
 

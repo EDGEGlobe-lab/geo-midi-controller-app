@@ -312,8 +312,8 @@
 
 ## Through-Composed Synthetic Vocal Catalogue
 
-- [ ] Replace the existing looping synthetic-vocal mix with a through-composed five-minute Night Drive Continuum vocal arrangement, retaining only original lyrics and non-identifiable alien-cyborg voice synthesis.
-- [ ] Define distinct continuous five-minute vocal arrangement maps and original lyric scripts for each of the remaining 19 PARKWAY tracks, with changing sections rather than repeated loops.
+- [x] Replace the existing looping synthetic-vocal mix with a through-composed five-minute Night Drive Continuum vocal arrangement, retaining only original lyrics and non-identifiable alien-cyborg voice synthesis.
+- [x] Define distinct continuous five-minute vocal arrangement maps and original lyric scripts for each of the remaining 19 PARKWAY tracks, with changing sections rather than repeated loops.
 - [ ] Render, assemble, upload, and register all 20 through-composed five-minute vocal masters as distinct project assets with `synthetic-vocal-only`, no-human-source, and no-franchise-imitation provenance.
 - [ ] Apply continuous cyborg-robotic alien vocal processing and child-friendly cartoon-filtered effects throughout every vocal master without copying any known voice or fictional character.
 - [ ] Replace the one-variant catalogue mapping with all 20 vocal-master mappings, direct player selection, lyric cues, and instrument/vocal provenance states.

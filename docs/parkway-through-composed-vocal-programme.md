@@ -26,3 +26,9 @@ Every vocal master is a **300-second original arrangement** made from two contin
 | 20 Parkway Afterglow | 124 BPM D minor progressive closing suite | Afterglow verse, homeward refrain, closing-suite rise | Reprise bridge, final golden chorus, resolved sunset outro |
 
 > The lyric display shall activate only when the matching registered synthetic vocal master is selected. Instrumental masters retain their own unchanged provenance, source URL, and waveform state.
+
+## Verified Production State
+
+Tracks **01–13** have verified 300-second, through-composed synthetic vocal masters uploaded as direct project storage assets and registered separately from their instrumental masters. Track 14 has an opening source section only and is not selectable as a vocal master. Tracks **14–20** remain unavailable in vocal mode until their individually rendered, continuity-matched original sections are completed, assembled, uploaded, and registered.
+
+The remaining renders are intentionally deferred because the available music-generation capacity was exhausted during the controlled batch. No looping, duplicated section, human voice, voice reference, or franchise imitation will be substituted to fill the remaining catalogue positions.

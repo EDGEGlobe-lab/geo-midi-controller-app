@@ -28,10 +28,12 @@ describe("synthetic vocal policy", () => {
     await expect(caller.studio.assets.uploadManusMusic({ projectKey: PARKWAY_CATALOGUE_PROJECT_KEY, filename: "unknown.wav", mimeType: "audio/wav", dataBase64: "UklGRg==", tags: ["synthetic-vocal-variant"] })).rejects.toMatchObject({ code: "FORBIDDEN" });
   });
 
-  it("registers the verified non-identifiable synthetic vocal master separately from its instrumental", async () => {
+  it("registers each available verified through-composed synthetic vocal master separately from its instrumental", async () => {
     const result = await appRouter.createCaller(contextFor(user)).studio.assets.registerParkwaySyntheticVocals({ projectKey: PARKWAY_CATALOGUE_PROJECT_KEY });
-    expect(result).toMatchObject({ total: 1, skipped: [] });
+    expect(result).toMatchObject({ total: 13, skipped: [] });
+    expect(db.createStudioAsset).toHaveBeenCalledTimes(13);
     expect(db.createStudioAsset).toHaveBeenCalledWith(expect.objectContaining({ userId: 64, assetType: "vocal", durationMs: 300_000, tags: expect.stringContaining("alien-creature-edm-voice") }));
     expect(db.createStudioAsset).toHaveBeenCalledWith(expect.objectContaining({ tags: expect.stringContaining("no-franchise-imitation") }));
+    expect(db.createStudioAsset).toHaveBeenCalledWith(expect.objectContaining({ tags: expect.stringContaining("through-composed-five-minute-arrangement") }));
   });
 });
