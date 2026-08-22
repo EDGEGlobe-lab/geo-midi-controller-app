@@ -327,6 +327,13 @@
 - [x] Add regression coverage for built-in-speaker recovery, direct project-WAV routing, Stereo In routing, and bass-profile limits.
 - [ ] Validate the listening controls on iPhone-sized and desktop layouts, document system-output boundaries, and publish the playback-quality repair.
 
+## Top Transport and Radio No-Sound Repair
+
+- [x] Reproduce and trace the reported no-sound state affecting the top transport, radio player, and other non-catalogue audio controls with browser logs and source-health checks.
+- [x] Repair the user-gesture playback sequence so top transport and radio media start before asynchronous audio-graph work, retaining the shared Stereo In → Channel Rack → Mix Bus → Stereo Out route.
+- [x] Add regression coverage for gesture-preserving top transport/radio playback, direct source health, and routing recovery without external-host dependency.
+- [ ] Validate audible transport and radio playback through Stereo In → Channel Rack → Mix Bus → Stereo Out on desktop and iPhone-sized layouts, then publish the repair.
+
 ## Truthful Live GitHub Repository Metrics Engine
 
 - [x] Inspect `EDGEGlobe-lab/geo-midi-controller-app` and its current project state using the authenticated GitHub connection; do not overwrite concurrent repository changes.

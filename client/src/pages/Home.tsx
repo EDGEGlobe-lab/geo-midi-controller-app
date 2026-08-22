@@ -4,6 +4,7 @@ import { trpc } from "@/lib/trpc";
 import { clampMasterVolume } from "@/lib/audioSafety";
 import { BASS_PROFILES, browserStereoMeter, formatMeterDb, isBassProfileId, type BassProfileId, type StereoMeter } from "@/lib/stereoCalibration";
 import { shouldReconnectStereoIn } from "@/lib/stereoInRouting";
+import { startWithinUserGesture } from "@/lib/userGesturePlayback";
 import { clearFallbackForManualSource, decideFallbackRecovery } from "@/lib/fallbackRecovery";
 import { DevicesSoundAccessPanel, type HardwareDraft } from "@/components/DevicesSoundAccessPanel";
 import { ProductReadinessPanel } from "@/components/ProductReadinessPanel";
@@ -550,23 +551,32 @@ export default function Home() {
     }
   };
 
+  const startMediaFromGesture = async (successMessage?: string) => {
+    const audio = audioRef.current;
+    if (!audio) return false;
+    try {
+      // Start before the first await: iOS/Safari can expire a click's user
+      // activation after asynchronous AudioContext work and silence playback.
+      audio.muted = false;
+      audio.volume = radioActive ? radioVolume / 100 : 1;
+      if (!await startWithinUserGesture(audio, enableStereo)) return false;
+      setIsPlaying(true);
+      setStereoStatus("ready");
+      if (successMessage) toast.success(successMessage);
+      return true;
+    } catch (error) {
+      if (isExpectedOperationAbort(error)) { setIsPlaying(false); return false; }
+      console.error(error);
+      setStereoStatus("error");
+      toast.error("Audio preview could not start. Enable Stereo and retry the selected original programme.");
+      return false;
+    }
+  };
+
   const togglePlay = async () => {
     if (!audioRef.current) return;
     if (isPlaying) { audioRef.current.pause(); setIsPlaying(false); return; }
-    try {
-      if (!await enableStereo()) return;
-      await audioRef.current.play();
-      setIsPlaying(true);
-      setStereoStatus("ready");
-    } catch (error) {
-      if (isExpectedOperationAbort(error)) {
-        setIsPlaying(false);
-        return;
-      }
-      console.error(error);
-      setStereoStatus("error");
-      toast.error("Audio preview could not start. Enable Stereo and check the selected browser output; a fallback is reserved for failed media sources.");
-    }
+    await startMediaFromGesture();
   };
 
   const recoverAndPlay = async () => {
@@ -575,6 +585,10 @@ export default function Home() {
     if (!context || !audio) { setStereoStatus("error"); toast.error("Browser audio output is unavailable on this device."); return; }
     try {
       setTracksState((items) => items.map((track) => ({ ...track, muted: false, solo: false })));
+      // Call play before awaiting context work to retain the click activation on Safari/iOS.
+      audio.muted = false;
+      audio.volume = radioActive ? radioVolume / 100 : 1;
+      const playPromise = audio.play();
       if (context.state !== "running") await context.resume();
       if (!routeSourceToTrack(selectedTrack)) throw new Error("Channel Rack route could not be restored");
       Object.entries(trackNodesRef.current).forEach(([trackId, node]) => {
@@ -582,9 +596,7 @@ export default function Home() {
         node.gain.gain.setTargetAtTime(Math.max(0.01, level / 100), context.currentTime, 0.01);
       });
       masterGainRef.current?.gain.setTargetAtTime(Math.max(50, clampMasterVolume(master)) / 100, context.currentTime, 0.01);
-      audio.muted = false;
-      audio.volume = radioActive ? radioVolume / 100 : 1;
-      await audio.play();
+      await playPromise;
       setChannelStatus("ready"); setMixBusStatus("ready"); setStereoStatus("ready"); setIsPlaying(true);
       setMaster((current) => Math.max(50, current));
       toast.success("Built-in speaker recovery running. Channel Rack, Mix Bus, and Stereo Out are active.");
@@ -714,17 +726,7 @@ export default function Home() {
     setCurrentTime(0);
     setDuration(0);
     setIsPlaying(false);
-    try {
-      if (!await enableStereo()) return;
-      await audio.play();
-      setIsPlaying(true);
-      setStereoStatus("ready");
-      toast.success(`Practice session started: ${firstProgramme.title}`);
-    } catch (error) {
-      if (isExpectedOperationAbort(error)) { setIsPlaying(false); return; }
-      setStereoStatus("error");
-      toast.error("Practice playback could not start. Use Recover & Play, then choose the station again.");
-    }
+    await startMediaFromGesture(`Practice session started: ${firstProgramme.title}`);
   };
   const selectRadioProgramme = (programmeId: string) => {
     const programme = getStationProgramme(selectedRadioStation.id, programmeId);
@@ -753,8 +755,9 @@ export default function Home() {
   };
   const toggleRadioPlayback = () => {
     if (!radioActive) {
-      selectRadioStation(radioStationId);
-      window.setTimeout(() => void togglePlay(), 0);
+      // Do not defer playback with setTimeout: that loses the explicit user
+      // gesture required by phone browsers for audible radio start.
+      void startRadioPractice(radioStationId);
       return;
     }
     void togglePlay();
