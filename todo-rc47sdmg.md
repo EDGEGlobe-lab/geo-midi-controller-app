@@ -349,7 +349,7 @@
 - [x] Never render requested target totals as live values unless the GitHub API actually returns them; show real values, last refreshed time, loading/error state, and source boundaries instead.
 - [x] Add a PARKWAY Repository Metrics workspace with accessible live refresh, concise numeric formatting, and a link to the public repository.
 - [x] Add tests for GitHub API response normalization, pagination/count semantics, no-fabrication safeguards, and UI loading/error states.
-- [ ] Validate live API data in the published view, complete type checks/tests/build, save a checkpoint, and synchronize the changes to the connected GitHub repository.
+- [x] Validate live API data and the published temporary-403 fallback view, complete type checks/tests/build, save a checkpoint, and synchronize the changes to the connected GitHub repository.
 
 ## Repository Metrics Temporary 403 Handling
 
@@ -358,4 +358,13 @@
 - [x] Return a successful, clearly stale/degraded response for temporary GitHub 403/rate-limit states when a verified snapshot exists, keeping other application queries unaffected.
 - [x] Add retry-after-aware client controls and visible stale-data/source-status messaging without repeated background retry storms.
 - [x] Add regression coverage for 403, rate-limit metadata, cached snapshot fallback, no-snapshot degraded state, and normal live refresh.
-- [ ] Validate the Repository workspace during a simulated 403 and normal response, run type checks/tests/build, and publish the repair.
+- [x] Validate the Repository workspace during an observed 403 and normal response, run type checks/tests/build, and publish the repair.
+
+## Settings and Local Cityscape Exploration Workspace
+
+- [x] Add a dedicated PARKWAY Settings workspace to the contained navigation drawer and desktop navigation, with mobile-safe focus and dismissal behavior.
+- [x] Add practical, browser-local sound-mixing controls for master volume, bass profile, selected channel level/pan, compact mode, and truthful output-state guidance.
+- [x] Add an original local cityscape exploration display with keyboard/pointer navigation, reduced-motion behavior, and clear non-VR/non-hardware-rendering disclosure.
+- [x] Do not represent the display as “8000D,” a physical artificial-reality device, or a real-world navigation system; keep it an original on-screen visual exploration.
+- [x] Add tests for Settings workspace data isolation, user-control state updates, and cityscape navigation constraints.
+- [x] Validate desktop and iPhone-sized Settings layouts, run type checks/tests/build, and publish the workspace.
