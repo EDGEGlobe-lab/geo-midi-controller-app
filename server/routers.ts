@@ -11,7 +11,7 @@ import { canActivateSoundAccess, canRevokeSoundAccess, SOUND_ACCESS_NOTICE_VERSI
 import { fallbackAssetTags, NIGHT_DRIVE_FALLBACK_DURATION_MS, NIGHT_DRIVE_FALLBACK_MIME_TYPE, NIGHT_DRIVE_FALLBACK_STORAGE_KEY, selectNightDriveGenre } from "../shared/aiProjectFallback";
 import { getParkwayRadioStation } from "../shared/radioStationCatalog";
 import { catalogueAssetTags, catalogueWaveformPreview, PARKWAY_CATALOGUE_PROJECT_KEY, parkwayCatalogue, parkwaySyntheticVocalVariants, syntheticVocalVariantAssetTags } from "../shared/parkwayCatalogue";
-import { getLiveRepositoryMetrics } from "./githubRepositoryMetrics";
+import { getRepositoryMetricsWithFallback } from "./githubRepositoryMetrics";
 
 const assetTypeSchema = z.enum(["audio", "vocal", "sfx", "sample", "motion", "image", "other"]);
 const MAX_ASSET_BYTES = 30 * 1024 * 1024;
@@ -52,12 +52,7 @@ export const appRouter = router({
   system: systemRouter,
   repositoryMetrics: router({
     live: publicProcedure.query(async () => {
-      try {
-        return await getLiveRepositoryMetrics();
-      } catch (error) {
-        const message = error instanceof Error ? error.message : "GitHub repository data is temporarily unavailable";
-        throw new TRPCError({ code: "SERVICE_UNAVAILABLE", message });
-      }
+      return getRepositoryMetricsWithFallback();
     }),
   }),
   auth: router({
