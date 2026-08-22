@@ -32,6 +32,11 @@ import {
   getStationProgramme,
   parkwayRadioStations,
 } from "@shared/radioStationCatalog";
+import {
+  isWorkspaceView,
+  readWorkspaceView,
+  withWorkspaceView,
+} from "@shared/workspaceNavigation";
 import { isExpectedOperationAbort } from "@/lib/operationAbort";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
@@ -72,21 +77,21 @@ import { toast } from "sonner";
 const AUDIO_TRACKS = [
   {
     id: "geo-render",
-    label: "GEO Controller Render",
-    src: "/manus-storage/geo_midi_controller_deck_audio_pcm_c625e838.wav",
-    tag: "D MAJOR / 156 BPM",
+    label: "Original Project Preview 01",
+    src: "/manus-storage/geo-signal-project-01_84b23959.mp3",
+    tag: "ORIGINAL PROJECT / PRIVATE REVIEW",
   },
   {
     id: "muchie-casket",
-    label: "Muchie Pop Casket",
-    src: "/manus-storage/geo-midi-controller-app_muchie_pop_casket_4e927e6a.wav",
-    tag: "F MINOR / 128 BPM",
+    label: "Original Project Preview 02",
+    src: "/manus-storage/geo-signal-project-02_8e6078d6.mp3",
+    tag: "ORIGINAL PROJECT / PRIVATE REVIEW",
   },
   {
     id: "autonomous-project",
-    label: "Autonomous Manus AI Audio",
-    src: "/manus-storage/parkway-autonomous-audio_b0d36279.wav",
-    tag: "D MAJOR / 156 BPM",
+    label: "Original Project Preview 03",
+    src: "/manus-storage/geo-signal-project-03_896d1230.mp3",
+    tag: "ORIGINAL PROJECT / PRIVATE REVIEW",
   },
 ] as const;
 
@@ -941,31 +946,9 @@ export default function Home() {
   );
   const [activeBar, setActiveBar] = useState(8);
   const [selectedTrack, setSelectedTrack] = useState("pluck");
-  const [activeView, setActiveView] = useState(() => {
-    const requestedView = new URLSearchParams(window.location.search).get(
-      "view"
-    );
-    return [
-      "Arrangement",
-      "Mixer",
-      "Piano Roll",
-      "Performance",
-      "Studio",
-      "Generator",
-      "Signals",
-      "Radio",
-      "Product",
-      "Devices",
-      "Develop",
-      "Assets",
-      "History",
-      "Feedback",
-      "Review",
-      "Contact",
-    ].includes(requestedView ?? "")
-      ? requestedView!
-      : "Arrangement";
-  });
+  const [activeView, setActiveView] = useState(() =>
+    readWorkspaceView(window.location.search)
+  );
   const [showBrowser, setShowBrowser] = useState(
     () => window.innerWidth >= 760
   );
@@ -2142,15 +2125,28 @@ export default function Home() {
     [assetsQuery.data, assetFilterTag]
   );
   const selectWorkspace = (view: string) => {
+    if (!isWorkspaceView(view)) return;
     setActiveView(view);
-    const nextUrl = new URL(window.location.href);
-    nextUrl.searchParams.set("view", view);
-    window.history.replaceState({}, "", nextUrl);
+    window.history.pushState(
+      { workspace: view },
+      "",
+      withWorkspaceView(window.location.href, view)
+    );
     if (window.innerWidth < 760) setShowBrowser(false);
     window.requestAnimationFrame(() =>
       document.getElementById("workspace-content")?.focus()
     );
   };
+  useEffect(() => {
+    const syncWorkspaceFromHistory = () => {
+      setActiveView(readWorkspaceView(window.location.search));
+      window.requestAnimationFrame(() =>
+        document.getElementById("workspace-content")?.focus()
+      );
+    };
+    window.addEventListener("popstate", syncWorkspaceFromHistory);
+    return () => window.removeEventListener("popstate", syncWorkspaceFromHistory);
+  }, []);
   const returnToStart = () => {
     selectWorkspace("Arrangement");
     window.requestAnimationFrame(() =>
@@ -3491,7 +3487,7 @@ export default function Home() {
             <AssetFocusPanel
               assets={assetsQuery.data ?? []}
               authenticated={isAuthenticated}
-              onOpenStudio={() => setActiveView("Studio")}
+              onOpenStudio={() => selectWorkspace("Studio")}
             />
           )}
           {activeView === "History" && (
@@ -3540,9 +3536,9 @@ export default function Home() {
           {activeView === "Product" && (
             <>
               <ProductReadinessPanel
-                onOpenPerformance={() => setActiveView("Performance")}
-                onOpenMixer={() => setActiveView("Mixer")}
-                onOpenStudio={() => setActiveView("Studio")}
+                onOpenPerformance={() => selectWorkspace("Performance")}
+                onOpenMixer={() => selectWorkspace("Mixer")}
+                onOpenStudio={() => selectWorkspace("Studio")}
                 onTestPlayback={() => void togglePlay()}
               />
               <AIProjectFallbackPanel
@@ -3579,7 +3575,7 @@ export default function Home() {
           )}
           {activeView === "Develop" && (
             <HardwareDevelopmentPanel
-              onOpenStudio={() => setActiveView("Studio")}
+              onOpenStudio={() => selectWorkspace("Studio")}
             />
           )}
           {activeView === "Feedback" && (

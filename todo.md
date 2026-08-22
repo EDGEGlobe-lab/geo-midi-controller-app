@@ -30,3 +30,6 @@
 - [x] Prepare a licensing, rights, and provider-integration readiness package for a qualified broadcast operator; do not acquire licences, enter contracts, embed third-party channels, or enable relay without verified authority and agreements.
 - [x] Add clear in-product readiness messaging that distinguishes current original browser audio from any future licensed transmission or provider integration.
 - [x] Validate the no-relay boundary and document the required legal, technical, and provider approval gates.
+- [x] Audit navigation, Signals, audio, accessibility, performance, and maintainability for the highest-impact reliability improvements.
+- [x] Implement focused quality improvements that preserve user-initiated playback, verified metrics, and existing external-provider boundaries.
+- [x] Test accessibility, responsive navigation, performance-sensitive paths, and regressions; then commit the improvement update.
