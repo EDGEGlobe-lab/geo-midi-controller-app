@@ -70,3 +70,6 @@
 - [x] Re-run the complete test suite and focused signal-flow coverage after the production-session hardening changes.
 - [x] Verify the exact production configuration validator implementation and startup invocation.
 - [x] Verify signal-flow component selection coverage and clearly distinguish pure-model testing from browser click interaction testing.
+- [x] Add a DOM-capable signal-flow interaction test that exercises stage clicks, selected `aria-pressed` state, and detail-panel updates.
+- [x] Audit remaining source and deployment configuration paths for optional environment variables that need an explicit production decision or validation.
+- [x] Create a concise presentation summarizing production hardening, CI gates, environment validation, and signal-flow test coverage improvements.

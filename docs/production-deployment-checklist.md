@@ -50,6 +50,12 @@ Before the production server starts, it now fails fast if `DATABASE_URL`, `JWT_S
 
 The Maps client is the only browser-side service fallback outside the server environment module: if `VITE_FRONTEND_FORGE_API_URL` is absent, it falls back to `https://forge.butterfly-effect.dev`; no equivalent fallback exists for `VITE_FRONTEND_FORGE_API_KEY`. Production releases should provide the approved frontend URL and restricted key explicitly rather than relying on that development fallback.
 
+### Deployment-script boundaries
+
+The active build and runtime path is `server/_core/index.ts`, because the package build script bundles that entrypoint. The older `server/index.ts` and the repository's static-site/GitHub Pages workflow templates are legacy/static deployment material and must not be selected for the server-backed production release.
+
+`GITHUB_ACTIONS` is used only by Vite to select a GitHub Pages asset base path during a static workflow build. It is not a runtime credential or a Node-host production setting. The Node-host release uses the normal `/` base path and the production configuration validation described above.
+
 | Missing value           | Current runtime behaviour                                                                                                                                                            | Production requirement                                                                                         |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
 | `DATABASE_URL`          | Startup remains possible because the database is lazy-initialised, but user persistence degrades and database-dependent features may return empty results or `Database unavailable`. | Provide a reachable production MySQL/TiDB-compatible connection before enabling the full application.          |

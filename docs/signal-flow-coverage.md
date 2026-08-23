@@ -8,12 +8,12 @@ The focused command below uses Vitest’s V8 provider to measure only the signal
 pnpm test:signal-flow-coverage
 ```
 
-On the current verified revision, the focused run completed all 77 repository tests and produced the following result.
+On the current verified revision, the focused run completed all 78 repository tests and produced the following result.
 
 | File | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |
 | `shared/signalFlowModel.ts` | 100% | 100% | 100% | 100% |
-| `client/src/components/SignalFlowVisualization.tsx` | 100% | 100% | 50% | 100% |
+| `client/src/components/SignalFlowVisualization.tsx` | 100% | 100% | 100% | 100% |
 
 ## What the tests verify
 
@@ -21,8 +21,10 @@ On the current verified revision, the focused run completed all 77 repository te
 
 `shared/signalFlowVisualization.test.tsx` server-renders the component in the existing Node test environment. It verifies the labelled section, list semantics, four native stage buttons, initial `aria-pressed` state, listener-action copy, and the explicit no-recording/no-transmission boundary.
 
-## Deliberate coverage limitation
+`shared/signalFlowVisualization.dom.test.tsx` runs in happy-dom. It clicks the BUS button, verifies that `aria-pressed` moves from IN to BUS, and checks the updated local route explanation.
 
-The component’s `onClick` callback is not invoked in the current Node-only test environment, which is why component function coverage is 50% even though its statements, branches, and lines are fully covered. The callback only delegates selection to React state, while the selected-stage logic is covered exhaustively in the pure model tests.
+## Interaction coverage
 
-If a future change adds multi-step interaction, keyboard-navigation customisation, animation state, or side effects to the component, add a DOM-based interaction test using a dedicated browser-like test environment before treating the current server-render coverage as sufficient.
+The happy-dom test invokes the component’s `onClick` callback, so the focused component now has 100% statement, branch, function, and line coverage. The pure model tests continue to cover stage ordering, browser-local route states, selected-stage lookup, and invalid persisted-selection recovery.
+
+If a future change adds multi-step interaction, keyboard-navigation customisation, animation state, or side effects to the component, extend the DOM test before treating the current interaction coverage as sufficient.
