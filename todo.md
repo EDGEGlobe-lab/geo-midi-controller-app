@@ -67,3 +67,6 @@
 - [x] Review every new session-security test case and its controlled environment setup.
 - [x] Review the exact production-environment checklist additions and their startup/configuration implications.
 - [x] Review the signal-flow component code and its focused V8 coverage report, including remaining function-coverage limitations.
+- [x] Re-run the complete test suite and focused signal-flow coverage after the production-session hardening changes.
+- [x] Verify the exact production configuration validator implementation and startup invocation.
+- [x] Verify signal-flow component selection coverage and clearly distinguish pure-model testing from browser click interaction testing.
