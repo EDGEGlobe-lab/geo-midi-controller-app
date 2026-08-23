@@ -45,5 +45,8 @@ jobs:
       - name: Run automated tests
         run: pnpm test
 
+      - name: Verify signal-flow coverage
+        run: pnpm test:signal-flow-coverage
+
       - name: Build production artifact
         run: pnpm build

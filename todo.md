@@ -61,3 +61,6 @@
 - [x] Run and review the dedicated signal-flow coverage command and measured metrics.
 - [x] Inspect the Drizzle schema plus database and storage fallback behavior for user upserts and lookups.
 - [x] Inspect OAuth token exchange and session-cookie validation controls in the server core.
+- [x] Audit all remaining environment-variable references and fallback behavior, distinguishing intentional development fallback from production requirements.
+- [x] Review whether the quality-gate workflow runs all available test and lint/format checks; add safe missing gates if needed.
+- [x] Review and harden session-token configuration validation and verification controls where the current implementation permits unsafe defaults.
