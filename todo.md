@@ -39,3 +39,6 @@
 - [x] Audit the main workspace import graph and choose safe lazy-load boundaries that preserve authenticated flows and direct workspace navigation.
 - [x] Implement lazy-loaded workspace modules with accessible loading states and add an original interactive IN → CH → BUS → OUT signal-flow visualisation with explicit ethical boundaries.
 - [x] Run the current TypeScript and full automated test suite, verify workspace loading and responsive visualisation behavior, then commit the update.
+- [x] Analyze the remaining production entry chunk and apply only safe code-splitting refinements that preserve initial shell, workspace navigation, and playback behaviour.
+- [x] Review public-production deployment prerequisites for the target repository and prepare an evidence-based release checklist without treating the separate GEO Signal domain as this app’s deployment.
+- [x] Review the IN → CH → BUS → OUT component and its tests; close material test-coverage gaps for its local-state and accessibility behaviour.

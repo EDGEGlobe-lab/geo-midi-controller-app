@@ -1,7 +1,9 @@
 export type SignalRouteState = "idle" | "ready" | "error" | "locked";
 
+export type SignalFlowStageId = "IN" | "CH" | "BUS" | "OUT";
+
 export type SignalFlowStage = {
-  id: "IN" | "CH" | "BUS" | "OUT";
+  id: SignalFlowStageId;
   title: string;
   state: SignalRouteState;
   detail: string;
@@ -46,4 +48,11 @@ export function deriveSignalFlowStages({
       detail: "Browser output; no device selection or transmission control.",
     },
   ];
+}
+
+export function selectSignalFlowStage(
+  stages: SignalFlowStage[],
+  requestedId: string
+): SignalFlowStage {
+  return stages.find(stage => stage.id === requestedId) ?? stages[0];
 }

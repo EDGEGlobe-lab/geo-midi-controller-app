@@ -1,7 +1,9 @@
 import { BrainCircuit, CircleAlert, ShieldCheck } from "lucide-react";
-import { useState } from "react";
+import React, { useState } from "react";
 import {
   deriveSignalFlowStages,
+  selectSignalFlowStage,
+  type SignalFlowStageId,
   type SignalRouteState,
 } from "@shared/signalFlowModel";
 
@@ -17,9 +19,8 @@ export function SignalFlowVisualization({
   output: SignalRouteState;
 }) {
   const stages = deriveSignalFlowStages({ isPlaying, channel, mixBus, output });
-  const [selectedStage, setSelectedStage] = useState("IN");
-  const selected =
-    stages.find(stage => stage.id === selectedStage) ?? stages[0];
+  const [selectedStage, setSelectedStage] = useState<SignalFlowStageId>("IN");
+  const selected = selectSignalFlowStage(stages, selectedStage);
 
   return (
     <section
