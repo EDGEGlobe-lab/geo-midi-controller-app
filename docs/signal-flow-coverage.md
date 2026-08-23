@@ -8,7 +8,7 @@ The focused command below uses Vitest’s V8 provider to measure only the signal
 pnpm test:signal-flow-coverage
 ```
 
-On the current verified revision, the focused run completed all 72 repository tests and produced the following result.
+On the current verified revision, the focused run completed all 77 repository tests and produced the following result.
 
 | File | Statements | Branches | Functions | Lines |
 | --- | ---: | ---: | ---: | ---: |

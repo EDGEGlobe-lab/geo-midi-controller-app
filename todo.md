@@ -64,3 +64,6 @@
 - [x] Audit all remaining environment-variable references and fallback behavior, distinguishing intentional development fallback from production requirements.
 - [x] Review whether the quality-gate workflow runs all available test and lint/format checks; add safe missing gates if needed.
 - [x] Review and harden session-token configuration validation and verification controls where the current implementation permits unsafe defaults.
+- [x] Review every new session-security test case and its controlled environment setup.
+- [x] Review the exact production-environment checklist additions and their startup/configuration implications.
+- [x] Review the signal-flow component code and its focused V8 coverage report, including remaining function-coverage limitations.
