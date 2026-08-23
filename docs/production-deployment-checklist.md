@@ -24,23 +24,38 @@ Use a Node-compatible managed host for the target repository. The release artifa
 
 Configure secrets only in the chosen hosting platform, never in committed files. The host must set `NODE_ENV=production` and supply `PORT`. The following inventory is derived from the current server and client configuration.
 
-| Variable | Runtime scope | Required use and handling |
-| --- | --- | --- |
-| `NODE_ENV` | Server/build | Set to `production`; it selects static-file serving and production React resolution. |
-| `PORT` | Server | Host-provided listening port; do not hard-code a public port. |
-| `DATABASE_URL` | Server only | Production database connection used by the Drizzle data layer. Keep private. |
-| `JWT_SECRET` | Server only | Session-cookie signing secret. Generate and retain it securely; changing it invalidates active sessions. |
-| `OAUTH_SERVER_URL` | Server only | OAuth service base URL used for callback handling. Keep its callback registration aligned with the target HTTPS origin. |
-| `OWNER_OPEN_ID` | Server only | Owner identity configuration consumed by server context and ownership controls. |
-| `BUILT_IN_FORGE_API_URL` | Server only | Base URL for approved server-side platform integrations, including storage proxy support. |
-| `BUILT_IN_FORGE_API_KEY` | Server only | Credential for those server-side integrations. Never expose it in a `VITE_*` variable or client bundle. |
-| `GITHUB_TOKEN` | Server only, optional | Raises GitHub API quota where configured. Omit it rather than exposing it if unauthenticated public metrics are sufficient. |
-| `VITE_APP_ID` | Browser build input | Public application identifier used by both client login initiation and server configuration. It is embedded during Vite build and is not a secret. |
-| `VITE_OAUTH_PORTAL_URL` | Browser build input | Public browser destination used to begin OAuth login. Must match the selected OAuth environment. |
-| `VITE_FRONTEND_FORGE_API_URL` | Browser build input | Public frontend integration URL currently referenced by the guarded Maps client path. |
-| `VITE_FRONTEND_FORGE_API_KEY` | Browser build input | Browser-visible key currently referenced by the guarded Maps client path. Use only a deliberately restricted frontend credential; never reuse the server-side Forge key. |
+| Variable                      | Runtime scope         | Required use and handling                                                                                                                                                |
+| ----------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `NODE_ENV`                    | Server/build          | Set to `production`; it selects static-file serving and production React resolution.                                                                                     |
+| `PORT`                        | Server                | Host-provided listening port; do not hard-code a public port.                                                                                                            |
+| `DATABASE_URL`                | Server only           | Production database connection used by the Drizzle data layer. Keep private.                                                                                             |
+| `JWT_SECRET`                  | Server only           | Session-cookie signing secret. Generate and retain it securely; changing it invalidates active sessions.                                                                 |
+| `OAUTH_SERVER_URL`            | Server only           | OAuth service base URL used for callback handling. Keep its callback registration aligned with the target HTTPS origin.                                                  |
+| `OWNER_OPEN_ID`               | Server only           | Owner identity configuration consumed by server context and ownership controls.                                                                                          |
+| `BUILT_IN_FORGE_API_URL`      | Server only           | Base URL for approved server-side platform integrations, including storage proxy support.                                                                                |
+| `BUILT_IN_FORGE_API_KEY`      | Server only           | Credential for those server-side integrations. Never expose it in a `VITE_*` variable or client bundle.                                                                  |
+| `GITHUB_TOKEN`                | Server only, optional | Raises GitHub API quota where configured. Omit it rather than exposing it if unauthenticated public metrics are sufficient.                                              |
+| `VITE_APP_ID`                 | Browser build input   | Public application identifier used by both client login initiation and server configuration. It is embedded during Vite build and is not a secret.                       |
+| `VITE_OAUTH_PORTAL_URL`       | Browser build input   | Public browser destination used to begin OAuth login. Must match the selected OAuth environment.                                                                         |
+| `VITE_FRONTEND_FORGE_API_URL` | Browser build input   | Public frontend integration URL currently referenced by the guarded Maps client path.                                                                                    |
+| `VITE_FRONTEND_FORGE_API_KEY` | Browser build input   | Browser-visible key currently referenced by the guarded Maps client path. Use only a deliberately restricted frontend credential; never reuse the server-side Forge key. |
 
 Vite embeds `VITE_*` values into the browser build. Therefore, treat them as public configuration even if their names contain `KEY`, and restrict any browser-visible credential to the minimum approved capability.
+
+### Runtime defaults and production limits
+
+The server environment module converts unset configuration values to empty strings. `NODE_ENV` is the only exception: production mode is active only when it is exactly `"production"`. The server listens on `PORT` and falls back to `3000` only when the host does not provide a value; a production host should always provide its assigned port.
+
+| Missing value           | Current runtime behaviour                                                                                                                                                            | Production requirement                                                                                         |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | Startup remains possible because the database is lazy-initialised, but user persistence degrades and database-dependent features may return empty results or `Database unavailable`. | Provide a reachable production MySQL/TiDB-compatible connection before enabling the full application.          |
+| `JWT_SECRET`            | The JWT helper receives an empty HMAC secret; startup does not fail fast.                                                                                                            | Provide a high-entropy non-empty secret and retain it across restarts; rotation invalidates existing sessions. |
+| `OAUTH_SERVER_URL`      | SDK startup logs a configuration error; OAuth token exchange cannot use a valid base URL.                                                                                            | Provide the matching OAuth service base URL.                                                                   |
+| `VITE_APP_ID`           | Server token exchange and browser sign-in receive an empty application identifier.                                                                                                   | Supply the registered public application identifier at build time.                                             |
+| `VITE_OAUTH_PORTAL_URL` | Browser sign-in cannot construct a valid `/app-auth` destination.                                                                                                                    | Supply the matching public OAuth portal URL at build time.                                                     |
+| HTTPS forwarding        | Session cookies are always `HttpOnly`, `SameSite=None`, and host-only; `secure` becomes true only when Express sees HTTPS or `X-Forwarded-Proto: https`.                             | Terminate TLS correctly and forward the protocol header through the host proxy.                                |
+
+The OAuth callback verifies a one-time nonce from the `__Host-oauth_state` cookie, exchanges the authorization code, persists the user when the database is available, then issues a one-year session. The production callback must therefore use the same HTTPS origin that began the sign-in request.
 
 Before release, apply any pending database migrations through the host’s controlled migration process. Do not use production data for test fixtures, and do not make destructive schema changes without an approved backup and rollback plan.
 
