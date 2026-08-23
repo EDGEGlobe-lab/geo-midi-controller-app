@@ -52,3 +52,6 @@
 - [x] Verify and document the server-only database and OAuth environment-variable defaults and startup behavior from the current runtime implementation.
 - [x] Review the complete IN → CH → BUS → OUT component and pure model tests, including the relationship between rendered state and deterministic selection coverage.
 - [x] Repair the live quality-gate workflow’s duplicate pnpm version declaration and verify a successful GitHub Actions run.
+- [x] Verify the exact deployment-checklist environment-variable and proxy-header wording against the implemented server behavior.
+- [x] Review the complete signal-flow pure-model test cases and their selection assertions.
+- [x] Review the live GitHub Actions quality-gate workflow triggers, permissions, setup, and quality steps.
