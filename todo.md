@@ -58,3 +58,6 @@
 - [x] Inspect the IN → CH → BUS → OUT React component’s stage rendering and selection-click state transitions.
 - [x] Verify source-level database and authentication defaults from the server configuration and entry modules.
 - [x] Verify the package scripts and dependencies executed by the GitHub Actions quality-gate workflow.
+- [x] Run and review the dedicated signal-flow coverage command and measured metrics.
+- [x] Inspect the Drizzle schema plus database and storage fallback behavior for user upserts and lookups.
+- [x] Inspect OAuth token exchange and session-cookie validation controls in the server core.
