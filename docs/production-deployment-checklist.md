@@ -22,7 +22,25 @@ Use a Node-compatible managed host for the target repository. The release artifa
 
 ## Required configuration
 
-Configure secrets only in the chosen hosting platform, never in committed files. The current server environment contract requires `DATABASE_URL`, `JWT_SECRET`, `VITE_APP_ID`, `OAUTH_SERVER_URL`, `OWNER_OPEN_ID`, `BUILT_IN_FORGE_API_URL`, and `BUILT_IN_FORGE_API_KEY`. The host must also set `NODE_ENV=production` and supply `PORT`. `GITHUB_TOKEN` is optional for authenticated GitHub API quota; no token may be exposed to the browser.
+Configure secrets only in the chosen hosting platform, never in committed files. The host must set `NODE_ENV=production` and supply `PORT`. The following inventory is derived from the current server and client configuration.
+
+| Variable | Runtime scope | Required use and handling |
+| --- | --- | --- |
+| `NODE_ENV` | Server/build | Set to `production`; it selects static-file serving and production React resolution. |
+| `PORT` | Server | Host-provided listening port; do not hard-code a public port. |
+| `DATABASE_URL` | Server only | Production database connection used by the Drizzle data layer. Keep private. |
+| `JWT_SECRET` | Server only | Session-cookie signing secret. Generate and retain it securely; changing it invalidates active sessions. |
+| `OAUTH_SERVER_URL` | Server only | OAuth service base URL used for callback handling. Keep its callback registration aligned with the target HTTPS origin. |
+| `OWNER_OPEN_ID` | Server only | Owner identity configuration consumed by server context and ownership controls. |
+| `BUILT_IN_FORGE_API_URL` | Server only | Base URL for approved server-side platform integrations, including storage proxy support. |
+| `BUILT_IN_FORGE_API_KEY` | Server only | Credential for those server-side integrations. Never expose it in a `VITE_*` variable or client bundle. |
+| `GITHUB_TOKEN` | Server only, optional | Raises GitHub API quota where configured. Omit it rather than exposing it if unauthenticated public metrics are sufficient. |
+| `VITE_APP_ID` | Browser build input | Public application identifier used by both client login initiation and server configuration. It is embedded during Vite build and is not a secret. |
+| `VITE_OAUTH_PORTAL_URL` | Browser build input | Public browser destination used to begin OAuth login. Must match the selected OAuth environment. |
+| `VITE_FRONTEND_FORGE_API_URL` | Browser build input | Public frontend integration URL currently referenced by the guarded Maps client path. |
+| `VITE_FRONTEND_FORGE_API_KEY` | Browser build input | Browser-visible key currently referenced by the guarded Maps client path. Use only a deliberately restricted frontend credential; never reuse the server-side Forge key. |
+
+Vite embeds `VITE_*` values into the browser build. Therefore, treat them as public configuration even if their names contain `KEY`, and restrict any browser-visible credential to the minimum approved capability.
 
 Before release, apply any pending database migrations through the host’s controlled migration process. Do not use production data for test fixtures, and do not make destructive schema changes without an approved backup and rollback plan.
 

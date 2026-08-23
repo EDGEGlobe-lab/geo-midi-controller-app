@@ -42,3 +42,6 @@
 - [x] Analyze the remaining production entry chunk and apply only safe code-splitting refinements that preserve initial shell, workspace navigation, and playback behaviour.
 - [x] Review public-production deployment prerequisites for the target repository and prepare an evidence-based release checklist without treating the separate GEO Signal domain as this app’s deployment.
 - [x] Review the IN → CH → BUS → OUT component and its tests; close material test-coverage gaps for its local-state and accessibility behaviour.
+- [x] Verify each documented production environment variable and release step against the current server configuration.
+- [x] Inspect the IN → CH → BUS → OUT implementation and test suite, recording the exact coverage scope and limitations.
+- [x] Produce a fresh production-build inventory of the vendor chunks and confirm the active splitting strategy and file sizes.
