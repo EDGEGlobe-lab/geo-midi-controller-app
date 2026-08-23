@@ -51,4 +51,4 @@
 - [x] Add a least-privilege GitHub Actions workflow that runs the current install, TypeScript, test, and production-build gates on pull requests and default-branch pushes.
 - [x] Verify and document the server-only database and OAuth environment-variable defaults and startup behavior from the current runtime implementation.
 - [x] Review the complete IN → CH → BUS → OUT component and pure model tests, including the relationship between rendered state and deterministic selection coverage.
-- [ ] Repair the live quality-gate workflow’s duplicate pnpm version declaration and verify a successful GitHub Actions run.
+- [x] Repair the live quality-gate workflow’s duplicate pnpm version declaration and verify a successful GitHub Actions run.
