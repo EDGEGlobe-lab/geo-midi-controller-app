@@ -45,3 +45,6 @@
 - [x] Verify each documented production environment variable and release step against the current server configuration.
 - [x] Inspect the IN → CH → BUS → OUT implementation and test suite, recording the exact coverage scope and limitations.
 - [x] Produce a fresh production-build inventory of the vendor chunks and confirm the active splitting strategy and file sizes.
+- [x] Review the remaining operational tasks before a Node-compatible production release and distinguish host-owned actions from repository changes.
+- [x] Trace the signal-flow selection tests and document how pure model coverage supports the component’s selection behaviour.
+- [x] Review the active Vite manual chunk rules and document how each dependency group is assigned.
