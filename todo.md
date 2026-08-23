@@ -55,3 +55,6 @@
 - [x] Verify the exact deployment-checklist environment-variable and proxy-header wording against the implemented server behavior.
 - [x] Review the complete signal-flow pure-model test cases and their selection assertions.
 - [x] Review the live GitHub Actions quality-gate workflow triggers, permissions, setup, and quality steps.
+- [x] Inspect the IN → CH → BUS → OUT React component’s stage rendering and selection-click state transitions.
+- [x] Verify source-level database and authentication defaults from the server configuration and entry modules.
+- [x] Verify the package scripts and dependencies executed by the GitHub Actions quality-gate workflow.
