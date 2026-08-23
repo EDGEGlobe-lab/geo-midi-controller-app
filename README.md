@@ -1,7 +1,7 @@
 # GEO MIDI Controller App
 
 <div align="center">
-  <img src="./logo.svg" alt="GEO MIDI Controller App - Neon Green Blueberry Logo" width="200" height="200" />
+  <img src="./logo.svg" alt="GEO MIDI Controller App - Neon Green Blueberry Logo" width="100" height="100" />
   <p><em>🌊 A browser-native control room for the GEO electronic music system powered by Lucid Dream AI 🌊</em></p>
 </div>
 
